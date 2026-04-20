@@ -1,0 +1,95 @@
+FINAL YEAR PROJECT PROPOSAL
+CureFound
+Discovering Hidden Cures for Untreatable Diseases via Biomedical Knowledge Graph Intelligence
+Muhammad Bilal  ·  Batool Fatima  ·  Moaz Nadeem
+Department of Computer Science
+Ghulam Ishaq Khan Institute of Engineering Sciences & Technology
+1. Project Summary
+CureFound builds a biomedical knowledge graph connecting diseases, genes, proteins, drugs, biological pathways, and clinical symptoms from six major public databases. It then trains knowledge graph embedding models (TransE, RotatE, ComplEx) to predict which existing, approved drugs might treat rare diseases they were never designed for — a process called drug repurposing.
+The system also provides diagnostic support: a clinician inputs unusual symptoms, and the system traverses the graph using multi-hop reasoning (Symptom → Gene → Pathway → Disease) to surface rare disease candidates the clinician may never have considered.
+Why this matters: There are ~7,000 rare diseases affecting 300 million people worldwide. 95% have zero approved treatment. Drug companies ignore them because small patient populations mean small profits. But clues about potential treatments already exist, scattered across disconnected databases. CureFound connects those dots.
+2. System Architecture
+CureFound is a 5-module pipeline. Data flows left to right:
+Figure 1: End-to-end system pipeline
+Module
+Tool
+What It Does
+Data Ingestion
+Custom ETL
+Pulls structured data from OMIM, DrugBank, DisGeNET, KEGG, HPO, Orphanet. Harmonizes entity IDs to standard ontologies (MONDO, UniProt, MeSH).
+Literature NER
+PubMedBERT + SetFit
+Extracts drug/gene/disease entities from PubMed abstracts. SetFit handles rare disease-specific terms with just 10–20 examples. (Optional module — core pipeline works without it.)
+Knowledge Graph
+Neo4j
+Stores 500K+ nodes and 2M+ edges as a multi-relational graph with 6 node types (Disease, Gene, Protein, Drug, Pathway, Symptom) and 7+ relationship types.
+Embeddings
+PyKEEN + FAISS
+Trains TransE, RotatE, ComplEx, DistMult on the full graph. Entities that share pathways cluster together in embedding space — enabling link prediction for drug repurposing.
+Query Engine
+FastAPI + React
+Drug repurposing: input a disease, get ranked drug predictions with evidence chains. Diagnostic matching: input symptoms, get ranked rare disease candidates via FAISS + graph traversal.
+3. Knowledge Graph Schema
+The dashed line (Drug → treats → Disease) is the prediction target. All other relationships are evidence the model uses to infer that missing link.
+Figure 2: Knowledge graph schema — 6 entity types, 7 relationship types
+How link prediction discovers drug candidates: The embedding model learns that if a drug targets a protein in the same pathway disrupted by a rare disease’s causative gene, the drug and disease should be close in embedding space — even without a direct “treats” link.
+Figure 3: Drug repurposing inference path (Niemann-Pick C example)
+4. Data Sources
+All data is freely available via public APIs or bulk downloads. No institutional partnerships, NDAs, or ethics approvals required.
+Database
+Provides
+Example
+Access
+OMIM
+Disease → Gene mappings
+Gaucher → GBA gene
+Free API
+DrugBank
+Drug → Protein targets
+Imatinib → BCR-ABL
+Free (academic)
+DisGeNET
+Gene → Disease associations + scores
+BRCA2 → Fanconi (0.85)
+Free API
+KEGG
+Biological pathway maps
+MAPK signaling pathway
+Free API
+HPO
+Standardized symptom terms
+HP:0001250 = Seizures
+Bulk download
+Orphanet
+Rare disease classifications
+Prevalence, inheritance
+Bulk download
+PubMed
+Biomedical literature (abstracts)
+36M+ articles
+Free API
+5. Tech Stack
+Component
+Tool
+Justification
+Graph Database
+Neo4j
+Industry standard for knowledge graphs. Native Cypher queries. Free community edition.
+KG Embeddings
+PyKEEN
+30+ embedding models. Built-in evaluation (Hits@K, MRR). Runs on single GPU.
+Biomedical NER
+PubMedBERT + SetFit
+PubMedBERT for general biomedical entities. SetFit fine-tunes with 10–20 examples for niche rare disease terms.
+Similarity Search
+FAISS
+Sub-millisecond vector similarity for diagnostic phenotype matching.
+Backend / Frontend
+FastAPI + React
+REST API + interactive graph visualization via D3.js.
+Compute: Everything runs on Google Colab / Kaggle GPUs. PyKEEN trains on 500K-node graphs in hours on a single GPU. No enterprise compute needed.
+6. Evaluation
+Drug Repurposing — Time-split validation: Build the graph using data before a cutoff (e.g., pre-2020). Remove post-cutoff Drug → treats → Disease links. Train on the pre-cutoff graph. Test: did the model predict relationships discovered after 2020? Metrics: Hits@1, Hits@10, MRR.
+Diagnostic Matching: Test against published rare disease case reports. Given presenting symptoms, does the system rank the correct disease in its Top-1, Top-5, or Top-10? Metric: MRR.
+Baseline: Benchmark against Hetionet (~47K nodes, 2.25M edges), a well-established biomedical KG. Run the same link prediction task on both graphs for direct comparison.
+Focus disease cluster: Lysosomal Storage Disorders (Gaucher, Fabry, Niemann-Pick, Pompe). Single-gene disorders with clean data, some existing treatments (positive labels), and others with no treatment (prediction targets).

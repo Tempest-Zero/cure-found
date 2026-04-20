@@ -1,0 +1,171 @@
+{
+  "protocol": "leave-one-out over TREATS triples; filtered rank over all Drug heads; other known TREATS heads for the same tail excluded.",
+  "kg_version": "kg-mvp-0.1+sha.227c0192deca",
+  "config": {
+    "dim": 64,
+    "margin": 1.0,
+    "lr": 0.01,
+    "epochs": 800,
+    "batch_size": 64,
+    "neg_per_pos": 4,
+    "seed": 42,
+    "normalize_entities": true
+  },
+  "metrics": {
+    "n_evaluated": 16,
+    "n_candidates_per_eval": 19,
+    "mean_rank": 9.875,
+    "mrr": 0.13086985012536484,
+    "hits_at_1": 0.0,
+    "hits_at_3": 0.0625,
+    "hits_at_10": 0.5625,
+    "ranks": [
+      16,
+      14,
+      13,
+      17,
+      9,
+      12,
+      6,
+      3,
+      9,
+      15,
+      9,
+      5,
+      4,
+      11,
+      10,
+      5
+    ]
+  },
+  "per_item": [
+    {
+      "head": "DR:AGALSIDASE_A",
+      "tail": "D:FABRY",
+      "head_name": "Agalsidase alfa",
+      "tail_name": "Fabry disease",
+      "rank": 16,
+      "n_candidates": 17
+    },
+    {
+      "head": "DR:AGALSIDASE_B",
+      "tail": "D:FABRY",
+      "head_name": "Agalsidase beta",
+      "tail_name": "Fabry disease",
+      "rank": 14,
+      "n_candidates": 17
+    },
+    {
+      "head": "DR:ALGLUCOSIDASE",
+      "tail": "D:POMPE",
+      "head_name": "Alglucosidase alfa",
+      "tail_name": "Pompe disease",
+      "rank": 13,
+      "n_candidates": 19
+    },
+    {
+      "head": "DR:ARIMOCLOMOL",
+      "tail": "D:NPC",
+      "head_name": "Arimoclomol",
+      "tail_name": "Niemann-Pick disease type C",
+      "rank": 17,
+      "n_candidates": 17
+    },
+    {
+      "head": "DR:ELIGLUSTAT",
+      "tail": "D:GAUCHER",
+      "head_name": "Eliglustat",
+      "tail_name": "Gaucher disease",
+      "rank": 9,
+      "n_candidates": 15
+    },
+    {
+      "head": "DR:IDURSULFASE",
+      "tail": "D:MPS2",
+      "head_name": "Idursulfase",
+      "tail_name": "Mucopolysaccharidosis type II",
+      "rank": 12,
+      "n_candidates": 19
+    },
+    {
+      "head": "DR:IMIGLUCERASE",
+      "tail": "D:GAUCHER",
+      "head_name": "Imiglucerase",
+      "tail_name": "Gaucher disease",
+      "rank": 6,
+      "n_candidates": 15
+    },
+    {
+      "head": "DR:IVACAFTOR",
+      "tail": "D:CF",
+      "head_name": "Ivacaftor",
+      "tail_name": "Cystic fibrosis",
+      "rank": 3,
+      "n_candidates": 19
+    },
+    {
+      "head": "DR:LARONIDASE",
+      "tail": "D:MPS1",
+      "head_name": "Laronidase",
+      "tail_name": "Mucopolysaccharidosis type I",
+      "rank": 9,
+      "n_candidates": 19
+    },
+    {
+      "head": "DR:MIGALASTAT",
+      "tail": "D:FABRY",
+      "head_name": "Migalastat",
+      "tail_name": "Fabry disease",
+      "rank": 15,
+      "n_candidates": 17
+    },
+    {
+      "head": "DR:MIGLUSTAT",
+      "tail": "D:GAUCHER",
+      "head_name": "Miglustat",
+      "tail_name": "Gaucher disease",
+      "rank": 9,
+      "n_candidates": 15
+    },
+    {
+      "head": "DR:MIGLUSTAT",
+      "tail": "D:NPC",
+      "head_name": "Miglustat",
+      "tail_name": "Niemann-Pick disease type C",
+      "rank": 5,
+      "n_candidates": 17
+    },
+    {
+      "head": "DR:NAL",
+      "tail": "D:NPC",
+      "head_name": "N-acetyl-L-leucine",
+      "tail_name": "Niemann-Pick disease type C",
+      "rank": 4,
+      "n_candidates": 17
+    },
+    {
+      "head": "DR:TALIGLUCERASE",
+      "tail": "D:GAUCHER",
+      "head_name": "Taliglucerase alfa",
+      "tail_name": "Gaucher disease",
+      "rank": 11,
+      "n_candidates": 15
+    },
+    {
+      "head": "DR:TETRABENAZINE",
+      "tail": "D:HD",
+      "head_name": "Tetrabenazine",
+      "tail_name": "Huntington disease",
+      "rank": 10,
+      "n_candidates": 19
+    },
+    {
+      "head": "DR:VELAGLUCERASE",
+      "tail": "D:GAUCHER",
+      "head_name": "Velaglucerase alfa",
+      "tail_name": "Gaucher disease",
+      "rank": 5,
+      "n_candidates": 15
+    }
+  ]
+}
