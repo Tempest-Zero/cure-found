@@ -1,0 +1,101 @@
+# ============================================================================
+# CureFound -- .dockerignore
+# Applies to `docker build` context sent to the daemon. Keep the context
+# small: ~100 MB without data/raw, ~3 GB with.
+# ============================================================================
+
+# --- Git / VCS ------------------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github/
+
+# --- Python artefacts -----------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# --- Test / lint caches ---------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+
+# --- IDE / editors --------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Claude Code session state --------------------------------------------
+.claude/
+
+# --- Secrets / env --------------------------------------------------------
+# .env.example IS copied into the image so containers have the template;
+# real .env is injected at runtime via `docker compose --env-file` or
+# environment-variable passthrough. NEVER bake .env into the image.
+.env
+.env.local
+.env.*.local
+
+# --- Data artefacts -------------------------------------------------------
+# data/seed/ and data/artifacts/ ARE copied (required for the default
+# KG_BACKEND=networkx path). data/raw/ is NOT (licences vary; 3+ GB).
+data/raw/
+
+# --- Neo4j host volumes (never bake into image) --------------------------
+docker/neo4j-data/
+docker/neo4j-logs/
+docker/neo4j-import/
+docker/neo4j-plugins/
+
+# --- Logs -----------------------------------------------------------------
+*.log
+logs/
+
+# --- Tests (not shipped in production backend image) ---------------------
+# Kept out of the prod image; CI image build overrides this with a
+# --build-arg if we ever need tests inside a container.
+tests/
+
+# --- Node / frontend dev artefacts ---------------------------------------
+# frontend/ as it stands today is a static HTML/JS demo -- keep it.
+# But node_modules and build artifacts from any future Vite/React port
+# should stay out.
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Docs build output ----------------------------------------------------
+docs/build/
+docs/_build/
+site/
+
+# --- Misc ----------------------------------------------------------------
+README.md.bak
+*.orig
+*.rej

@@ -1,0 +1,193 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+# ============================================================================
+# CureFound project metadata
+# ============================================================================
+[project]
+name = "curefound"
+version = "0.3.0.dev0"  # bumped 0.2.x (hardened MVP) -> 0.3.x (pre-Phase-1 refactor)
+description = "Biomedical knowledge graph for drug repurposing (LSD-focused) and symptom-based diagnosis."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [
+    { name = "Bilal", email = "bilal@curefound.local" },
+]
+keywords = [
+    "knowledge-graph",
+    "drug-repurposing",
+    "biomedical",
+    "rare-disease",
+    "lysosomal-storage-disease",
+    "fastapi",
+    "neo4j",
+    "transe",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+# Runtime deps -- version floors match what the hardened MVP was tested
+# against. Caps pin the current major so we don't hot-swap a breaking
+# change mid-FYP.
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "pydantic>=2.7,<3.0",
+    "pydantic-settings>=2.4,<3.0",
+    "numpy>=1.26,<3.0",
+    "networkx>=3.2,<4.0",
+    "neo4j>=5.20,<6.0",              # Phase 1 backend (not imported until KG_BACKEND=neo4j)
+    "structlog>=24.1,<26.0",
+    "asgi-correlation-id>=4.3,<5.0", # request-id middleware
+    "httpx>=0.27,<1.0",              # also a runtime dep because admin uses outbound
+    "python-multipart>=0.0.9",       # future-proof for file uploads in Phase 1 admin
+]
+
+[project.optional-dependencies]
+# Developer tooling. Install via `pip install -e '.[dev]'`
+dev = [
+    "pytest>=8.2,<9.0",
+    "pytest-asyncio>=0.23,<1.0",
+    "pytest-cov>=5.0,<7.0",
+    "ruff>=0.5,<1.0",
+    "pre-commit>=3.7,<5.0",
+]
+
+# Phase 1+ ingest extras (large deps kept optional so the default install
+# stays lean for reviewers who only want to run the API).
+ingest = [
+    "pandas>=2.1,<3.0",
+    "requests>=2.31,<3.0",
+    "tqdm>=4.66,<5.0",
+    "pyyaml>=6.0,<7.0",
+    "obonet>=1.1,<2.0",              # HPO / MONDO OBO parser
+    "sssom>=0.4,<1.0",               # MONDO cross-reference alignment
+]
+
+# Phase 2 extras (time-split + GNN baselines). Install only when training.
+ml = [
+    "torch>=2.2,<3.0",
+    "pykeen>=1.10,<2.0",
+    "scikit-learn>=1.4,<2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/bilal/curefound"
+Documentation = "https://github.com/bilal/curefound/blob/main/README.md"
+Issues = "https://github.com/bilal/curefound/issues"
+
+# ============================================================================
+# Hatch build -- the Python package we ship is `app/`.
+# ============================================================================
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/app",
+    "/tests",
+    "/scripts",
+    "/README.md",
+    "/pyproject.toml",
+]
+exclude = [
+    "/data/raw",
+    "**/__pycache__",
+    "**/*.pyc",
+]
+
+# ============================================================================
+# Ruff -- lint + format in one tool. Replaces black + isort + autoflake.
+# ============================================================================
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["app", "tests"]
+extend-exclude = [
+    "data",
+    "frontend/vendor",
+    "docs/build",
+]
+
+[tool.ruff.lint]
+# E/F   -- pyflakes + pycodestyle (syntax, undefined names, obvious bugs)
+# I     -- isort (import ordering)
+# UP    -- pyupgrade (catches `typing.List` / `Optional[X]` style we've
+#          consciously moved past)
+# B     -- flake8-bugbear (mutable default args, except-Exception, etc.)
+# SIM   -- flake8-simplify (dict.get, contextlib.suppress suggestions)
+# RUF   -- ruff-specific rules (unused noqa, etc.)
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",  # line-length handled by formatter
+    "B008",  # `Depends(...)` in defaults is idiomatic FastAPI
+    "SIM108", # ternary rewrite noise
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["B017", "B018"]    # test asserts are intentionally loose
+"app/etl/ingest/*.py" = ["E402"]      # ingestors may sys.path.insert before imports
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# ============================================================================
+# Pytest -- async mode = auto so we don't repeat @pytest.mark.asyncio
+# on every coroutine test.
+# ============================================================================
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py", "smoke.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",                # show short summary for everything not-passed
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+markers = [
+    "unit: pure-Python tests that do not touch FastAPI or disk fixtures",
+    "integration: router-level tests using AsyncClient + ASGITransport",
+    "e2e: full-stack smoke tests; require KG + artifacts on disk",
+    "regression: pins for named, previously-shipped bugs -- do not delete",
+    "slow: anything >1s per test (ingest, training); excluded from default run",
+]
+filterwarnings = [
+    "error::DeprecationWarning:app.*",
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::DeprecationWarning:pkg_resources",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+omit = ["app/etl/ingest/*", "app/ml/eval.py"]  # separately exercised
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
