@@ -1,0 +1,92 @@
+# ==========================================================================
+# CureFound — root .gitignore
+# Repo root is C:\Users\OGDCL\Documents\fyp\ (this file) which includes the
+# FYP proposal artefacts alongside the curefound/ project.
+# ==========================================================================
+
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+MANIFEST
+
+# --- Virtualenvs ----------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.env                     # real env file — NEVER commit
+.env.local
+.env.*.local
+# .env.example IS committed (documents required vars)
+
+# --- Test / lint caches ---------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+
+# --- IDE / editors --------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Claude Code session state --------------------------------------------
+# settings.local.json holds per-user permission grants; settings.json (if it
+# appears) is shared project config and should be committed.
+.claude/settings.local.json
+.claude/todos/
+.claude/shell-snapshots/
+.claude/history/
+
+# --- CureFound data artefacts --------------------------------------------
+# data/seed/kg.json          — KEEP (deterministic, part of the demo)
+# data/artifacts/             — KEEP tracked (lets reviewers skip the train step)
+# data/raw/                   — IGNORE (Phase 1 downloads, 3+ GB, not redistributable under mixed licenses)
+curefound/data/raw/
+
+# --- Docker runtime volumes ----------------------------------------------
+# Neo4j persists its DB under ./docker/neo4j-data/ when Compose mounts it locally.
+curefound/docker/neo4j-data/
+curefound/docker/neo4j-logs/
+curefound/docker/neo4j-import/
+curefound/docker/neo4j-plugins/
+
+# --- Logs -----------------------------------------------------------------
+*.log
+logs/
+
+# --- OS junk --------------------------------------------------------------
+desktop.ini
+$RECYCLE.BIN/
+
+# --- Node (frontend, Phase 6) --------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
