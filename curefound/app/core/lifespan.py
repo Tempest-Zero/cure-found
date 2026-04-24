@@ -18,6 +18,7 @@ Why lifespan and not module-level globals:
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
@@ -67,15 +68,45 @@ def _load_networkx_backend(settings: Settings) -> Any:
     return kg, E, R, meta
 
 
-def _load_neo4j_backend(_settings: Settings) -> Any:
-    """Phase 1 Step 5.3 will fill this in. Fails loud for now so nobody
-    accidentally flips `KG_BACKEND=neo4j` in .env before the ingestors
-    have produced a graph.
+def _load_neo4j_backend(settings: Settings) -> Any:
+    """Bootstrap the Neo4j backend + TransE artefacts.
+
+    Requires:
+    - A running Neo4j 5 instance at settings.NEO4J_URI
+    - KG data already ingested (run python -m app.etl.ingest.all first)
+    - TransE artefacts in settings.artifacts_dir (run python run.py train)
     """
-    raise RuntimeError(
-        "KG_BACKEND=neo4j is not wired up yet -- arrives in Phase 1 Step 5. "
-        "Keep KG_BACKEND=networkx until then."
+    from app.kg.neo4j_backend import Neo4jBackend
+    from app.ml import transe as transe_mod
+
+    _log.info(
+        "lifespan.load.start",
+        backend="neo4j",
+        uri=settings.NEO4J_URI,
+        db=settings.NEO4J_DATABASE,
     )
+    kg = Neo4jBackend(
+        uri=settings.NEO4J_URI,
+        user=settings.NEO4J_USER,
+        password=settings.NEO4J_PASSWORD,
+        database=settings.NEO4J_DATABASE,
+    )
+    _log.info(
+        "lifespan.kg.loaded",
+        version=kg.version,
+        n_entities=len(kg.idx_to_entity),
+        n_relations=len(kg.idx_to_relation),
+        n_triples=len(kg.triples),
+    )
+
+    E, R, meta = transe_mod.load_for_kg(kg, artifacts_dir=settings.artifacts_dir)
+    _log.info(
+        "lifespan.transe.loaded",
+        dim=int(E.shape[1]) if E.ndim == 2 else None,
+        n_entities=int(E.shape[0]) if E.ndim == 2 else None,
+        kg_version=meta.get("kg_version"),
+    )
+    return kg, E, R, meta
 
 
 @asynccontextmanager
@@ -124,8 +155,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         # --------- Shutdown --------- #
-        # Neo4j driver goes here once Phase 1 Step 5.3 lands:
-        #   driver = getattr(app.state, "neo4j_driver", None)
-        #   if driver is not None:
-        #       await driver.close()
+        # Close the Neo4j driver connection pool if we used the Neo4j backend.
+        if settings.KG_BACKEND == "neo4j":
+            backend = getattr(app.state, "kg", None)
+            close_fn = getattr(backend, "close", None)
+            if close_fn is not None:
+                with contextlib.suppress(Exception):
+                    close_fn()
         _log.info("lifespan.shutdown", backend=settings.KG_BACKEND)
