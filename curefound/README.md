@@ -1,109 +1,201 @@
-# CureFound — MVP prototype
+# CureFound
 
-**Status:** working end-to-end prototype, post-hardening. 99-node seed KG, TransE embeddings, FastAPI + Cytoscape.js UI. This is the **MVP** described in the FYP plan (`C:\Users\OGDCL\.claude\plans\vjndncc-shiny-puppy.md`). The seams match the final architecture — see [Swap map](#swap-map-where-the-mvp-differs-from-the-final-design) for what to replace in each phase.
+**Status: pre-Phase-1 refactor complete.** 99-node seed KG · TransE embeddings ·
+FastAPI + Cytoscape.js UI · Docker scaffolding · five Phase-1 ingestors written ·
+Neo4j backend implemented · 88 tests (23 regression + 65 integration) + 17 smoke
+checks, all green.
 
 > ⚠ **Research prototype. Not for clinical use.**
-
-A pre-Phase-1 backend-correctness sprint landed 12 defect fixes (C1-C5, H1-H7, M1-M4): proper leave-one-out evaluation replacing the old training-data leakage numbers, deterministic BFS subgraph, a Cytoscape `source`-field collision that previously dropped every edge from the graph view, stricter Pydantic validation, candidate-set-first ranking, O(1) xref resolution, schema validation, artifact-staleness detection, and an explicit `unresolved_inputs` channel so no input fails silently. See `tests/test_backend.py` for one regression guard per defect.
 
 ---
 
 ## What it does
 
-Two demo flows, both working:
+Two demo flows, both working end-to-end against the 99-node seed KG:
 
-1. **Drug repurposing.** Given a disease (e.g. Niemann-Pick disease type C), rank drugs most likely to treat it. Uses a hybrid ranker: (a) TransE link-prediction score for `(drug, TREATS, disease)`, (b) Jaccard overlap between the drug's pathway neighborhood and the disease's pathway neighborhood, (c) Reciprocal Rank Fusion. Also returns up to 3 short evidence paths per candidate.
-2. **Symptom-based diagnosis.** Given a set of HPO phenotype terms (e.g. `HP:0010729` cherry-red spot + `HP:0001252` hypotonia + ...), rank candidate diseases. Hybrid ranker: Jaccard + IDF-weighted symptom match + RRF.
+1. **Drug repurposing.** Given a rare disease (e.g. Niemann-Pick C), rank drug
+   candidates most likely to treat it. Hybrid ranker: TransE link-prediction
+   `(drug, TREATS, disease)` + Jaccard pathway-neighborhood overlap + Reciprocal
+   Rank Fusion. Returns evidence paths per candidate for explainability.
 
-Plus a free-form **KG explorer** (search any node, see its k-hop neighborhood as an interactive graph).
+2. **Symptom-based diagnosis.** Given HPO phenotype terms (e.g. cherry-red spot +
+   hypotonia + seizures), rank candidate diseases. Hybrid ranker: Jaccard symptom
+   overlap + IDF-weighted match + RRF. Unresolvable input tokens are reported
+   explicitly rather than silently dropped.
+
+Plus a free-form **KG explorer**: search any node, view its k-hop subgraph as an
+interactive Cytoscape.js graph.
 
 ---
 
-## Quickstart (60 seconds)
+## Quickstart — MVP (no Neo4j, no Docker)
 
 ```bash
 cd curefound
 
-# 1. Build the seed KG (regenerates data/seed/kg.json)
+# Install (editable + dev tools)
+pip install -e ".[dev]"
+
+# 1. Build the seed KG  (-> data/seed/kg.json)
 python run.py seed
 
-# 2. Train TransE (~6 seconds; saves to data/artifacts/)
+# 2. Train TransE       (-> data/artifacts/, ~6 s)
 python run.py train
 
-# 3. Start the API + UI (default port 8000)
+# 3. Serve
 python run.py serve
-
-# Open http://localhost:8000/   →   interactive UI
-# Open http://localhost:8000/docs →  OpenAPI / Swagger
+# http://localhost:8000/       interactive UI
+# http://localhost:8000/docs   OpenAPI / Swagger
 ```
 
-End-to-end test without a server (uses FastAPI TestClient):
+End-to-end smoke test (17 checks, no server needed):
 
 ```bash
 python run.py smoke
 ```
 
-Dependencies: Python 3.11+, `fastapi`, `uvicorn`, `pydantic`, `numpy`, `networkx`. Install via `pip install fastapi uvicorn pydantic numpy networkx`. No PyTorch / PyKEEN / Neo4j required for the MVP.
+Full test suite (88 tests):
+
+```bash
+pytest tests/regression tests/integration -v
+```
 
 ---
 
-## Repo layout
+## Quickstart — Phase 1 (Neo4j + full KG ingest)
+
+See **[PHASE1_SETUP.md](PHASE1_SETUP.md)** for the complete walkthrough. Short version:
+
+```bash
+# 1. Copy and edit .env
+cp .env.example .env
+# Set NEO4J_PASSWORD, DATAVERSE_API_TOKEN (for PrimeKG), etc.
+
+# 2. Start Neo4j
+docker compose up -d neo4j
+
+# 3. Download raw data (~5 GB: PrimeKG, DrugCentral, HPO, Orphanet, Reactome)
+python -m app.etl.fetch_all
+
+# 4. Run ingestors and load into Neo4j
+python -m app.etl.ingest.all --target neo4j
+
+# 5. Train TransE on the full KG
+python run.py train
+
+# 6. Serve against Neo4j
+KG_BACKEND=neo4j python run.py serve
+```
+
+---
+
+## Architecture
 
 ```
 curefound/
-├── data/
-│   ├── seed/kg.json                # generated; 99 nodes, 163 edges
-│   └── artifacts/                  # TransE embeddings + metadata (generated)
-├── etl/
-│   ├── build_seed_kg.py            # hand-curated LSD-focused KG generator
-│   └── id_map_service.py           # canonical-ID service (xref → canonical_id)
-├── kg/
-│   └── loader.py                   # NetworkX KG + search / subgraph / evidence paths
-├── ml/
-│   └── transe.py                   # TransE trainer, pure NumPy
-├── api/
-│   ├── main.py                     # FastAPI app (all endpoints)
-│   └── services/
-│       ├── repurpose.py            # drug-repurposing inference
-│       └── diagnose.py             # symptom-matching inference
+├── app/                            Python package
+│   ├── main.py                     create_app() factory + module-level app
+│   ├── core/
+│   │   ├── config.py               Settings(BaseSettings) — reads .env
+│   │   ├── logging.py              structlog + asgi-correlation-id
+│   │   ├── exceptions.py           AppError hierarchy + FastAPI handlers
+│   │   ├── lifespan.py             startup/shutdown: load KG + TransE
+│   │   └── paths.py                project-root resolution
+│   ├── kg/
+│   │   ├── loader.py               NetworkX KG (seed / networkx backend)
+│   │   ├── neo4j_backend.py        Neo4j 5 Bolt backend (same Protocol)
+│   │   ├── backend.py              KGBackend runtime_checkable Protocol
+│   │   ├── router.py               /stats /search /node /subgraph
+│   │   ├── schemas.py              NodeBrief, NodeDetail, SubgraphResponse
+│   │   └── deps.py                 KGDep = Annotated[KG, Depends(get_kg)]
+│   ├── repurpose/
+│   │   ├── service.py              TransE + Jaccard + RRF pipeline
+│   │   ├── router.py               POST /repurpose
+│   │   ├── schemas.py              RepurposeRequest/Response/Candidate
+│   │   └── deps.py                 RepurposeDep
+│   ├── diagnose/
+│   │   ├── service.py              Jaccard + IDF + RRF pipeline
+│   │   ├── router.py               POST /diagnose
+│   │   ├── schemas.py              DiagnoseRequest/Response/Candidate
+│   │   └── deps.py                 DiagnoseDep
+│   ├── admin/
+│   │   ├── router.py               GET /health
+│   │   └── schemas.py              HealthResponse
+│   ├── ml/
+│   │   ├── transe.py               Pure-NumPy TransE trainer + evaluator
+│   │   └── eval.py                 Leave-one-out filtered evaluation
+│   └── etl/
+│       ├── build_seed_kg.py        Hand-curated 99-node LSD seed KG
+│       ├── id_map_service.py       xref → canonical-id resolver
+│       ├── fetch_all.py            Download orchestrator (Phase 1)
+│       ├── _base.py                Ingestor ABC + KGAccumulator
+│       └── ingest/
+│           ├── primekg.py          PrimeKG backbone (LSD-scope filter)
+│           ├── drugcentral.py      Authoritative TREATS + approval_year
+│           ├── hpo.py              HPO DAG + HPOA disease-phenotype
+│           ├── orphanet.py         Orphanet rare-disease registry
+│           ├── reactome.py         Homo sapiens pathways
+│           └── all.py              Pipeline runner (--target json|neo4j)
+├── tests/
+│   ├── conftest.py                 Shared fixtures: test_app, sync/async client
+│   ├── regression/
+│   │   └── test_backend.py         23 pins — one per named defect (C1-C5, H1-H7, M1-M4)
+│   ├── integration/
+│   │   ├── conftest.py             int_client respects KG_BACKEND env var
+│   │   ├── test_admin_router.py    /health + dual-mount parity
+│   │   ├── test_kg_router.py       /stats /search /node /subgraph (31 tests)
+│   │   ├── test_repurpose_router.py POST /repurpose (15 tests)
+│   │   └── test_diagnose_router.py POST /diagnose (14 tests)
+│   └── e2e/
+│       └── smoke.py                17 end-to-end checks (python run.py smoke)
 ├── frontend/
-│   ├── index.html                  # single-page Cytoscape.js UI (3 tabs)
+│   ├── index.html                  Single-page Cytoscape.js UI (3 tabs)
 │   ├── style.css
 │   └── app.js
-├── tests/
-│   └── smoke.py                    # 17 end-to-end checks
-├── Makefile                        # GNU make tasks (optional)
-├── run.py                          # cross-platform task runner
-└── README.md                       # this file
+├── data/
+│   ├── seed/kg.json                99 nodes · 163 edges (generated)
+│   ├── artifacts/                  TransE weights + metadata (generated)
+│   └── raw/                        .gitignored; fetch_all.py target
+├── docker/
+│   ├── Dockerfile.backend          Multi-stage Python 3.11-slim
+│   └── neo4j/init.cypher           Constraints + indexes + FTS index
+├── scripts/
+│   ├── dev.sh                      Local dev wrapper
+│   └── lint.sh                     ruff check --fix + ruff format
+├── compose.yml                     Neo4j 5 service + (commented) backend
+├── .env.example                    All Settings fields documented
+├── pyproject.toml                  Deps + Ruff + pytest config
+├── run.py                          Cross-platform task runner
+└── PHASE1_SETUP.md                 Phase 1 detailed setup guide
 ```
 
 ---
 
 ## API reference
 
-All endpoints live under `http://localhost:8000/`.
+Both the bare path (`/health`) and the versioned prefix (`/api/v1/health`) work —
+dual-mount for backward compatibility with the existing frontend.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET  | `/health` | liveness + KG version |
-| GET  | `/stats`  | node / relation / edge counts |
-| GET  | `/search?q=&type=&limit=` | autocomplete search |
-| GET  | `/node/{node_id}` | node detail + xrefs + degree |
-| GET  | `/subgraph?node_id=&k=&max_nodes=` | Cytoscape-ready subgraph |
-| POST | `/repurpose` | ranked drug candidates with evidence paths |
-| POST | `/diagnose`  | ranked disease candidates from HPO ids |
+| GET  | `/health` | Liveness + KG version + backend name |
+| GET  | `/stats`  | Entity / relation / edge counts by type |
+| GET  | `/search?q=&type=&limit=` | Substring search with optional type filter |
+| GET  | `/node/{node_id}` | Node detail + xrefs + in/out degree |
+| GET  | `/subgraph?node_id=&k=&max_nodes=` | Cytoscape-ready k-hop subgraph |
+| POST | `/repurpose` | Ranked drug candidates with evidence paths |
+| POST | `/diagnose`  | Ranked disease candidates from HPO symptom ids |
 
-Live OpenAPI: `GET /docs`.
+Live OpenAPI: `GET /docs` (local environment only).
 
-### Example
+### Quick examples
 
 ```bash
-# Repurposing for Niemann-Pick C
+# Repurposing for Niemann-Pick C (canonical or MONDO id both work)
 curl -X POST http://localhost:8000/repurpose \
   -H "Content-Type: application/json" \
   -d '{"disease_id": "D:NPC", "top_k": 5, "include_already_approved": false}'
 
-# MONDO id also works
 curl -X POST http://localhost:8000/repurpose \
   -H "Content-Type: application/json" \
   -d '{"disease_id": "MONDO:0009937", "top_k": 5}'
@@ -112,11 +204,14 @@ curl -X POST http://localhost:8000/repurpose \
 curl -X POST http://localhost:8000/diagnose \
   -H "Content-Type: application/json" \
   -d '{"symptoms": ["HP:0010729","HP:0001252","HP:0001263","HP:0001250"], "top_k": 5}'
+
+# KG stats
+curl http://localhost:8000/stats
 ```
 
 ---
 
-## Seed KG stats
+## Seed KG (MVP baseline)
 
 ```
 99 entities · 7 relations · 163 triples
@@ -125,18 +220,23 @@ curl -X POST http://localhost:8000/diagnose \
 
   CAUSES: 14    ENCODES: 13   TARGETS: 19
   TREATS: 16    HAS_PHENOTYPE: 68
-  PARTICIPATES_IN: 31         ASSOCIATED_WITH: 2
+  PARTICIPATES_IN: 31   ASSOCIATED_WITH: 2
 ```
 
-Focus cluster: **Lysosomal Storage Disorders** (Gaucher, Fabry, Niemann-Pick A/B/C, Pompe, Tay-Sachs, Krabbe, MPS-I, MPS-II, MLD) plus CF and HD as non-LSD controls.
+Focus: **Lysosomal Storage Disorders** (Gaucher, Fabry, Niemann-Pick A/B/C, Pompe,
+Tay-Sachs, Krabbe, MPS-I/II, MLD) + Cystic Fibrosis and Huntington as non-LSD
+controls.
 
 ---
 
-## Held-out evaluation (leave-one-out, filtered)
+## Held-out evaluation
 
-`python ml/eval.py` runs the Bordes-2013 / PyKEEN-style protocol on every `TREATS` triple: retrain TransE on the remaining N−1 triples, score every Drug as a head for `(TREATS, t)`, and filter out other known-true heads for the same tail before ranking. The report is written to `data/artifacts/eval_report.json`.
+`python run.py eval` runs the Bordes-2013 / PyKEEN leave-one-out filtered protocol:
+retrain TransE on N-1 `TREATS` triples, rank every Drug for each held-out tail,
+filter known-true heads before ranking.  Report written to
+`data/artifacts/eval_report.json`.
 
-**Seed KG, 16 held-out `TREATS` triples, 19 Drug candidates, TransE dim=64, 800 epochs, seed=42:**
+**Seed KG · 16 held-out TREATS · 19 Drug candidates · TransE dim=64 · 800 epochs:**
 
 | Metric | Value |
 |---|---|
@@ -146,13 +246,18 @@ Focus cluster: **Lysosomal Storage Disorders** (Gaucher, Fabry, Niemann-Pick A/B
 | Hits@3 | **0.062** |
 | Hits@10 | **0.562** |
 
-These numbers are weak — as expected for pure-NumPy TransE on a 99-node graph with 16 training signals. They exist to (a) give the thesis an **honest baseline** that the Phase-2 PyKEEN + CompGCN pipeline can beat, (b) provide a repeatable protocol that survives the Phase-2 swap unchanged, and (c) make the hybrid ranker's value visible: the graph-score (Jaccard pathway overlap) carries most of the real signal on this graph size, which is why `/repurpose` still surfaces correct LSD candidates under RRF fusion.
+These numbers are the *honest baseline* for the thesis.  TransE on a 99-node graph
+with 16 training signals is expected to be weak.  The hybrid ranker (TransE + Jaccard
+pathway score + RRF) still surfaces correct LSD candidates because the graph-score
+carries most of the signal at this graph scale. Phase 2 will replace this with a
+PyKEEN pipeline (RotatE + CompGCN) on the full PrimeKG-derived graph and reproduce
+the Hetionet baseline for comparison.
 
-**Known repurposing candidates that the hybrid ranker (TransE + Jaccard + RRF) still surfaces in the top-10** (not in the `TREATS` graph — held out by design):
+**Known candidates surfaced by the hybrid ranker (top-10, not in the TREATS graph):**
 
-- **Hydroxypropyl-β-cyclodextrin** for Niemann-Pick C (real-world candidate, clinical-trial stage)
-- **Ambroxol** for Gaucher (real-world chaperone candidate)
-- **Vorinostat** / **Rapamycin** appear mid-table for LSDs via autophagy / HDAC pathways
+- **Hydroxypropyl-β-cyclodextrin** for Niemann-Pick C (clinical trial stage)
+- **Ambroxol** for Gaucher (chaperone candidate)
+- **Vorinostat / Rapamycin** mid-table for LSDs via autophagy / HDAC pathways
 
 ### Diagnostic accuracy on hand-picked LSD profiles
 
@@ -163,118 +268,113 @@ These numbers are weak — as expected for pure-NumPy TransE on a 99-node graph 
 | hepatomegaly + splenomegaly + VSGP + ataxia + seizures + devdelay | **Niemann-Pick C** | ✅ |
 | cherry-red spot + hypotonia + devdelay + seizures | **Tay-Sachs** | ✅ |
 
-Each of these profiles is pinned by a smoke check in `tests/smoke.py` and `tests/test_backend.py`.
-
-### Training-set sanity (NOT a metric)
-
-For comparison only — **these numbers were in the README before the hardening sprint and misrepresented training-set memorization as generalization**. They are kept here, relabeled, so the thesis can show the before/after and so future reviewers cannot mistake them for held-out results. Rank of the true disease tail when its own `TREATS` triple is in the training set:
-
-| Drug | True disease | Rank (training-set) |
-|---|---|---|
-| Imiglucerase | Gaucher | 1/13 |
-| Agalsidase beta | Fabry | 1/13 |
-| Miglustat | Niemann-Pick C | 1/13 |
-| Alglucosidase alfa | Pompe | 2/13 |
-| Laronidase | MPS-I | 5/13 |
+Pinned as integration-test assertions in `tests/integration/test_diagnose_router.py`
+and as smoke checks in `tests/e2e/smoke.py`.
 
 ---
 
 ## Scoring semantics
 
-Every score exposed by the API is documented here so reviewers can trace a ranking back to its constituents. Same field names are used by `/repurpose` and `/diagnose` responses and carry `description=…` in the OpenAPI schema.
+All scores exposed by the API carry `description=` in the OpenAPI schema.  Summary:
 
 **Repurposing (`/repurpose`)**
 
-- `model_score` — TransE score for `(drug, TREATS, disease)`, computed as `-||h + r − t||₂` (negative L2 distance between the translated head+relation and the tail). Higher is better; typical range on this KG is roughly `[−10, −2]`. Absolute values are not comparable across retrains because the embedding space is rotation-free.
-- `graph_score` — Jaccard overlap between the drug's pathway neighborhood (`drug → TARGETS → protein → PARTICIPATES_IN → pathway`) and the disease's pathway neighborhood (`disease → CAUSES → gene → ENCODES → protein → PARTICIPATES_IN → pathway`). In `[0, 1]`; higher is better.
-- `fused_score` — Reciprocal Rank Fusion of the two rankings with `k = 60`: `1/(60 + model_rank) + 1/(60 + graph_rank)`. Higher is better. This is what the response is sorted by.
-- `model_rank`, `graph_rank` — **1-indexed within the returned candidate universe.** When `include_already_approved=False`, approved drugs are excluded *before* ranking, so ranks run from 1 to `len(candidates)` — not across all 19 drugs in the KG. This was fix C4.
+- `model_score` — TransE: `-||h + r - t||₂`. Higher is better. Not comparable
+  across retrains (embedding space is rotation-free).
+- `graph_score` — Jaccard overlap between the drug's pathway neighborhood
+  (`drug → TARGETS → protein → PARTICIPATES_IN → pathway`) and the disease's
+  neighborhood (`disease → CAUSES → gene → ENCODES → protein → PARTICIPATES_IN →
+  pathway`). `[0, 1]`, higher is better.
+- `fused_score` — RRF of the two rankings, `k=60`:
+  `1/(60+model_rank) + 1/(60+graph_rank)`. Response is sorted by this.
+- `model_rank`, `graph_rank` — 1-indexed **within the returned candidate set**.
+  When `include_already_approved=False`, approved drugs are excluded *before*
+  ranking (fix C4).
 
 **Diagnosis (`/diagnose`)**
 
-- `jaccard_score` — `|input ∩ disease.symptoms| / |input ∪ disease.symptoms|`. In `[0, 1]`.
-- `idf_score` — sum of smoothed IDF weights of matched symptoms. Smoothed-IDF follows sklearn's `TfidfVectorizer`: `idf(s) = log((1 + N_diseases) / (1 + df(s))) + 1`. A symptom present in every disease gets `idf = 1` (not 0), a symptom unique to one disease gets the maximum weight. Higher is better.
-- `fused_score` — RRF of the two rankings with `k = 60`. Higher is better; response is sorted by this.
-- `matched_symptoms` / `missing_symptoms` — disease symptoms respectively present in / absent from the input set; both sorted deterministically by canonical id.
-- `unresolved_inputs` — HPO ids the input resolver could not map. Surfaced as a first-class field so the UI can flag them instead of silently dropping (fix C3).
-
----
-
-## Swap map (where the MVP differs from the final design)
-
-Each MVP module is a placeholder with a clean interface. In each phase of the FYP plan, the body gets replaced; callers don't change.
-
-| MVP module | Final-design replacement | Phase |
-|---|---|---|
-| `etl/build_seed_kg.py` (hand-curated ~100 nodes) | `etl/ingest_primekg.py`, `etl/ingest_drugcentral.py`, `etl/ingest_hpo.py`, `etl/ingest_orphanet.py`, `etl/ingest_reactome.py` → PrimeKG-hybrid KG | Phase 1 |
-| `etl/id_map_service.py` (xref dict from seed) | MONDO SSSOM + HGNC + UniProt + OXO + Bioregistry, fail-loud unmapped | Phase 1 |
-| `kg/loader.py` (NetworkX in-memory) | Neo4j 5.x + Cypher queries; same accessor contract | Phase 1 |
-| `ml/transe.py` (pure-NumPy TransE) | PyKEEN pipeline (TransE + RotatE + ComplEx + DistMult + **CompGCN**); time-split; filtered MRR; bootstrap CI | Phase 2 |
-| Jaccard pathway score in `repurpose.py` | keep as baseline + GNN score from CompGCN | Phase 2 |
-| Jaccard + IDF in `diagnose.py` | add FAISS over HPO vectors + Resnik similarity over HPO DAG | Phase 4 |
-| — (no NER in MVP) | `ner/pubmedbert_ner.py`, `ner/setfit_rare_disease.py`; enriches KG with `MENTIONED_WITH` weak edges | Phase 5 |
-| single-page `frontend/index.html` | React 18 + Vite + TypeScript; same Cytoscape.js component | Phase 6 |
-| no Docker | `docker-compose.yml` with Neo4j + FastAPI + frontend | Phase 6 |
-
-**What already matches the final design:**
-- Entity / relation vocabulary and edge directions.
-- Canonical ID xref scheme (MONDO / HGNC / UniProt / DrugCentral / Reactome / HPO).
-- Two inference endpoints with the same request / response schemas.
-- RRF fusion of embedding + graph scores.
-- Evidence-path return structure for explainability.
-- Server-side subgraph cap (plan Risk #8 — Cytoscape rendering cap).
-
----
-
-## Intentional MVP cuts (documented)
-
-- **No PrimeKG / Neo4j download** — requires 600 MB and a Neo4j server, not worth it until Phase 1.
-- **No time-split on `TREATS`** — the seed KG has `approval_year` on every `TREATS` edge, so the split can be enabled by passing `cutoff_year` into `ml/transe.py` when the graph is big enough (currently only 16 `TREATS` edges, too few for meaningful split).
-- **No GNN baseline** — Phase 2 work; CompGCN requires PyG + CUDA.
-- **No Hetionet baseline reproduction** — Phase 2 work; requires a larger dataset + PyKEEN.
-- **No NER enrichment** — Phase 5 work; requires PubMedBERT + ~30-80k PubMed abstracts.
-- **No Docker** — Phase 6 work.
-- **Evidence path finder has some duplicate-path artifacts** on `MultiDiGraph`. Cosmetic — Phase 3 will switch to explicit Cypher path queries on Neo4j.
+- `jaccard_score` — `|input ∩ disease.symptoms| / |input ∪ disease.symptoms|`.
+- `idf_score` — sum of smoothed IDF weights of matched symptoms.
+  `idf(s) = log((1+N)/(1+df(s)))+1`; rare symptoms count more.
+- `fused_score` — RRF of both rankings, `k=60`.
+- `unresolved_inputs` — input tokens that could not be resolved. Surfaced
+  explicitly so the UI can flag them (fix C3).
 
 ---
 
 ## Testing
 
-```bash
-python run.py smoke
+```
+pytest tests/regression tests/integration   # 88 tests
+python run.py smoke                          # 17 smoke checks
 ```
 
-Runs 17 end-to-end checks. All must pass before changes land:
+| Suite | Location | Count | What it covers |
+|---|---|---|---|
+| Regression | `tests/regression/test_backend.py` | 23 | One pin per named defect (C1-C5, H1-H7, M1-M4) |
+| Integration | `tests/integration/` | 65 | Full HTTP surface, schema, error cases, dual-mount |
+| E2E smoke | `tests/e2e/smoke.py` | 17 | Real-data ranking pins (Tay-Sachs, Fabry, NPC) |
 
-```
-ok   health.status
-ok   stats.n_entities>=80
-ok   stats.n_triples>=100
-ok   stats has TREATS
-ok   stats has Disease
-ok   search niem -> NPC hit
-ok   node D:NPC name
-ok   node D:NPC mondo
-ok   repurpose NPC has candidates
-ok   repurpose NPC surfaces a known repurposing candidate
-ok   repurpose MONDO->D:NPC
-ok   diagnose has candidates
-ok   diagnose cherry-red+hypotonia+seizures+devdelay -> Tay-Sachs
-ok   diagnose Fabry profile -> Fabry
-ok   subgraph NPC >= 10 nodes
-ok   subgraph NPC has edges
-ok   frontend index loads
-
-All smoke checks passed.
-```
+**Backend-parity testing (Step 6):** the integration tests are backend-agnostic.
+Run `KG_BACKEND=neo4j pytest tests/integration` after Phase 1 ingest to verify
+the Neo4j backend produces identical API responses.
 
 ---
 
-## Next steps (in plan order)
+## Phase progress
 
-1. **Phase 1:** Replace `build_seed_kg.py` with real ingestors. Stand up Neo4j. Keep every downstream caller unchanged.
-2. **Phase 2:** Swap `ml/transe.py` for a PyKEEN pipeline. Add CompGCN. Implement time-split on `TREATS` using `approval_year`. Run Hetionet baseline in parallel.
-3. **Phase 3:** Replace the placeholder evidence-path finder with proper Cypher path queries (e.g. `MATCH (d:Drug)-[:TARGETS]->(:Protein)<-[:ENCODES]-(:Gene)-[:CAUSES]->(dis:Disease)`).
-4. **Phase 4:** Add FAISS + Resnik semantic similarity to `services/diagnose.py`.
-5. **Phase 5:** (optional) NER enrichment.
-6. **Phase 6:** Port `frontend/` to React + Vite + TS, reusing `app.js` logic and the Cytoscape component.
+| Phase | Status | Key deliverable |
+|---|---|---|
+| Pre-Phase-1 refactor | ✅ **done** | `app/` layout, `create_app()`, `lifespan`, DI aliases, Ruff, 88-test suite |
+| Docker scaffolding | ✅ **done** | `compose.yml`, `Dockerfile.backend`, `init.cypher` |
+| Phase 1 — ingestor code | ✅ **done** | PrimeKG · DrugCentral · HPO · Orphanet · Reactome · `fetch_all.py` |
+| Phase 1 — KG backend | ✅ **done** | `KGBackend` Protocol · `Neo4jBackend` · `lifespan` wired |
+| Phase 1 — data ingest | 🔲 pending user | `docker compose up -d neo4j` → `python -m app.etl.fetch_all` → `python -m app.etl.ingest.all` |
+| Phase 1 — Neo4j live | 🔲 pending data | `KG_BACKEND=neo4j` + re-run 88+17 suite |
+| Phase 2 — PyKEEN + CompGCN | 🔲 future | After Phase 1 verification |
+| Phase 3 — Cypher evidence paths | 🔲 future | Replace in-memory DFS in `Neo4jBackend` |
+| Phase 4 — FAISS + Resnik diagnosis | 🔲 future | Second scorer in `DiagnoseService` |
+| Phase 5 — NER enrichment | 🔲 optional | `app/ner/` domain |
+| Phase 6 — React frontend | 🔲 future | Replace `frontend/index.html` |
+
+---
+
+## Configuration
+
+All settings are in `app/core/config.py` as a `pydantic-settings` `Settings`
+class that reads from `.env`.  Copy `.env.example` to `.env` and edit before
+running the Phase 1 stack.
+
+Key variables:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `KG_BACKEND` | `networkx` | `neo4j` after Phase 1 ingest |
+| `NEO4J_URI` | `bolt://localhost:7687` | Bolt URL |
+| `NEO4J_PASSWORD` | `changethis_dev_only` | **Must change** before production |
+| `DATAVERSE_API_TOKEN` | _(empty)_ | Required for PrimeKG download from Harvard Dataverse |
+| `DISEASE_SCOPE` | `lsd` | `lsd` · `lsd_extended` · `all` |
+| `LOG_LEVEL` | `INFO` | `DEBUG` · `INFO` · `WARNING` · `ERROR` |
+
+---
+
+## Development
+
+```bash
+# Install with dev extras
+pip install -e ".[dev]"
+
+# Lint + format (Ruff)
+bash scripts/lint.sh
+# or:
+ruff check app tests --fix && ruff format app tests
+
+# Dev convenience (serves + watches)
+bash scripts/dev.sh serve
+```
+
+Pre-commit hook (optional):
+
+```bash
+pre-commit install
+```
