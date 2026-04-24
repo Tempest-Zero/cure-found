@@ -1,0 +1,88 @@
+# ============================================================================
+# CureFound -- .gitignore
+# ============================================================================
+
+# --- Secrets / local config -----------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# --- Python artefacts -----------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+.Python
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+
+# --- Test / lint caches ---------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+
+# --- IDE / editors --------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Claude Code session state --------------------------------------------
+.claude/
+
+# --- Data artefacts -------------------------------------------------------
+# data/seed/  -- TRACKED (small, canonical KG for the MVP)
+# data/artifacts/  -- TRACKED (trained TransE .npz + eval_report.json; ~2 MB)
+# data/raw/   -- NOT TRACKED (large external downloads; 3+ GB; licences vary)
+data/raw/
+
+# Exclude individual large model snapshots if they appear outside artifacts/
+*.npz.bak
+*.npz.tmp
+
+# --- Neo4j Docker volumes (bind-mount paths) ------------------------------
+docker/neo4j-data/
+docker/neo4j-logs/
+docker/neo4j-import/
+docker/neo4j-plugins/
+
+# --- Logs -----------------------------------------------------------------
+*.log
+logs/
+
+# --- Node / frontend dev artefacts ---------------------------------------
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Docs build output ----------------------------------------------------
+docs/build/
+docs/_build/
+site/
+
+# --- Misc ----------------------------------------------------------------
+*.orig
+*.rej
+README.md.bak
