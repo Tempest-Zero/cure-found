@@ -25,13 +25,14 @@ API contract (fix for C3):
   did). Input ids are matched case-insensitively against both canonical
   Symptom node ids and the `HP:NNNNNNN` aliases.
 """
+
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
-from kg.loader import KG
+from app.kg.loader import KG
 
 
 @dataclass
@@ -41,8 +42,8 @@ class DiagnoseResult:
     jaccard_score: float
     idf_score: float
     fused_score: float
-    matched_symptoms: list[dict]        # [{id, name, hpo_id}]
-    missing_symptoms: list[dict]        # symptoms of disease not in input
+    matched_symptoms: list[dict]  # [{id, name, hpo_id}]
+    missing_symptoms: list[dict]  # symptoms of disease not in input
     is_rare: bool
 
 
@@ -84,7 +85,8 @@ class DiagnoseService:
     # ----------------------- input resolution ----------------------- #
 
     def resolve_inputs(
-        self, inputs: Iterable[str],
+        self,
+        inputs: Iterable[str],
     ) -> tuple[list[str], list[str]]:
         """Split raw input strings into `(resolved, unresolved)`.
 
@@ -190,28 +192,31 @@ class DiagnoseService:
 
 
 def build_default_service() -> DiagnoseService:
-    from kg.loader import load_kg
+    from app.kg.loader import load_kg
+
     return DiagnoseService(load_kg())
 
 
 if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    # Run as a module for correct package resolution:
+    #     python -m app.diagnose.service
     svc = build_default_service()
 
     demos = [
-        ("Niemann-Pick C profile",
-         ["HP:0002240", "HP:0001744", "HP:0000605", "HP:0001251",
-          "HP:0001250", "HP:0001263"]),
-        ("Gaucher profile",
-         ["HP:0002240", "HP:0001744", "HP:0001903", "HP:0001873", "HP:0002653"]),
-        ("Fabry profile",
-         ["HP:0001073", "HP:0000077", "HP:0009830", "HP:0001638"]),
-        ("Mystery child (onset infancy, cherry-red, hypotonic)",
-         ["HP:0010729", "HP:0001252", "HP:0001263", "HP:0001250"]),
-        ("Mixed-case + unknown (exercises resolve_inputs)",
-         ["hp:0010729", "HP:BOGUS", "S:SEIZURES"]),
+        (
+            "Niemann-Pick C profile",
+            ["HP:0002240", "HP:0001744", "HP:0000605", "HP:0001251", "HP:0001250", "HP:0001263"],
+        ),
+        ("Gaucher profile", ["HP:0002240", "HP:0001744", "HP:0001903", "HP:0001873", "HP:0002653"]),
+        ("Fabry profile", ["HP:0001073", "HP:0000077", "HP:0009830", "HP:0001638"]),
+        (
+            "Mystery child (onset infancy, cherry-red, hypotonic)",
+            ["HP:0010729", "HP:0001252", "HP:0001263", "HP:0001250"],
+        ),
+        (
+            "Mixed-case + unknown (exercises resolve_inputs)",
+            ["hp:0010729", "HP:BOGUS", "S:SEIZURES"],
+        ),
     ]
     for name, hpo_ids in demos:
         print(f"\n--- {name} : {hpo_ids} ---")

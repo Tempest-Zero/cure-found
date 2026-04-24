@@ -155,6 +155,7 @@ line-ending = "lf"
 minversion = "8.0"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = ["test_*.py", "*_test.py", "smoke.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

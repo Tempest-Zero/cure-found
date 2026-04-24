@@ -12,19 +12,26 @@ Bioregistry (see plan). The public interface below stays stable:
 
 See plan.md section "Canonical ID scheme" for the target per-entity scheme.
 """
+
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 # Canonical namespaces supported by the MVP seed KG.
 SUPPORTED_NAMESPACES = {
-    "mondo_id", "omim_id", "orpha_id",            # Disease
-    "hgnc_id", "ncbi_gene_id",                    # Gene
-    "uniprot_id",                                 # Protein
-    "drugcentral_id", "chembl_id", "pubchem_cid", # Drug
-    "reactome_id", "kegg_id",                     # Pathway
-    "hpo_id",                                     # Symptom
+    "mondo_id",
+    "omim_id",
+    "orpha_id",  # Disease
+    "hgnc_id",
+    "ncbi_gene_id",  # Gene
+    "uniprot_id",  # Protein
+    "drugcentral_id",
+    "chembl_id",
+    "pubchem_cid",  # Drug
+    "reactome_id",
+    "kegg_id",  # Pathway
+    "hpo_id",  # Symptom
 }
 
 
@@ -37,8 +44,10 @@ class IdMapService:
         """Return the canonical_id for an external id, or None if unmapped.
         `source_namespace` must be in SUPPORTED_NAMESPACES (e.g. "mondo_id")."""
         if source_namespace not in SUPPORTED_NAMESPACES:
-            raise ValueError(f"Unsupported namespace: {source_namespace!r}. "
-                             f"Known: {sorted(SUPPORTED_NAMESPACES)}")
+            raise ValueError(
+                f"Unsupported namespace: {source_namespace!r}. "
+                f"Known: {sorted(SUPPORTED_NAMESPACES)}"
+            )
         return self.forward.get((source_namespace, source_id))
 
     def xref(self, canonical_id: str, namespace: str) -> str | None:
@@ -65,15 +74,14 @@ def build_from_nodes(nodes: Iterable[dict]) -> IdMapService:
 
 
 if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from kg.loader import load_kg
+    # Run as a module:
+    #     python -m app.etl.id_map_service
+    from app.kg.loader import load_kg
 
     kg = load_kg()
     svc = build_from_nodes(kg.node_by_id.values())
     print("Canonicalize MONDO:0009937 ->", svc.canonicalize("MONDO:0009937", "mondo_id"))
-    print("Canonicalize HP:0001250   ->", svc.canonicalize("HP:0001250",   "hpo_id"))
-    print("Canonicalize HGNC:4177    ->", svc.canonicalize("HGNC:4177",    "hgnc_id"))
-    print("Canonicalize UNKNOWN      ->", svc.canonicalize("FOO:123",      "mondo_id"))
+    print("Canonicalize HP:0001250   ->", svc.canonicalize("HP:0001250", "hpo_id"))
+    print("Canonicalize HGNC:4177    ->", svc.canonicalize("HGNC:4177", "hgnc_id"))
+    print("Canonicalize UNKNOWN      ->", svc.canonicalize("FOO:123", "mondo_id"))
     print("xrefs for D:GAUCHER       ->", svc.all_xrefs("D:GAUCHER"))

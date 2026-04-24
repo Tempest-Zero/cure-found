@@ -24,24 +24,20 @@ graph). In Phase 2 the TransE retrain is replaced by a PyKEEN pipeline
 with a time-split on `approval_year`; everything else in this file is
 reused verbatim.
 """
+
 from __future__ import annotations
 
 import json
 import sys
 import time
 from dataclasses import asdict
-from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from kg.loader import load_kg, KG
-from ml import transe as transe_mod
-from ml.transe import TransEConfig
-
-
-ARTIFACTS = Path(__file__).resolve().parents[1] / "data" / "artifacts"
+from app.core.paths import ARTIFACTS_DIR as ARTIFACTS
+from app.kg.loader import KG, load_kg
+from app.ml import transe as transe_mod
+from app.ml.transe import TransEConfig
 
 
 def _treats_triples(kg: KG) -> list[tuple[int, int, int]]:
@@ -52,9 +48,7 @@ def _treats_triples(kg: KG) -> list[tuple[int, int, int]]:
     for e in kg.triples_with_props:
         if e["rel"] != "TREATS":
             continue
-        out.append(
-            (kg.entity_to_idx[e["head"]], r, kg.entity_to_idx[e["tail"]])
-        )
+        out.append((kg.entity_to_idx[e["head"]], r, kg.entity_to_idx[e["tail"]]))
     out.sort(key=lambda ht: (kg.idx_to_entity[ht[0]], kg.idx_to_entity[ht[2]]))
     return out
 
@@ -78,7 +72,7 @@ def _filtered_rank(
         if h_int == true_head:
             return rank + 1
         if h_int in known_heads_for_tail and h_int != true_head:
-            continue   # filtered
+            continue  # filtered
         rank += 1
     raise RuntimeError("true head not in candidate set")
 
@@ -92,9 +86,7 @@ def evaluate(
     treats = _treats_triples(kg)
     n_entities = len(kg.idx_to_entity)
     n_relations = len(kg.idx_to_relation)
-    drug_idxs = np.array(
-        [kg.entity_to_idx[d] for d in kg.drugs], dtype=np.int64
-    )
+    drug_idxs = np.array([kg.entity_to_idx[d] for d in kg.drugs], dtype=np.int64)
 
     # Pre-build the filter set: for each tail t, all known TREATS heads.
     heads_for_tail: dict[int, set[int]] = {}
@@ -114,27 +106,32 @@ def evaluate(
                 f"{kg.idx_to_entity[h]} -TREATS-> {kg.idx_to_entity[t]}",
                 flush=True,
             )
-        E, R, _ = transe_mod.train(
-            train, n_entities, n_relations, cfg=cfg, verbose=False
-        )
+        E, R, _ = transe_mod.train(train, n_entities, n_relations, cfg=cfg, verbose=False)
         rank = _filtered_rank(
-            E, R, drug_idxs, r, t, true_head=h,
+            E,
+            R,
+            drug_idxs,
+            r,
+            t,
+            true_head=h,
             known_heads_for_tail=heads_for_tail[t],
         )
         ranks.append(rank)
-        per_item.append({
-            "head": kg.idx_to_entity[h],
-            "tail": kg.idx_to_entity[t],
-            "head_name": kg.node_by_id[kg.idx_to_entity[h]]["name"],
-            "tail_name": kg.node_by_id[kg.idx_to_entity[t]]["name"],
-            "rank": rank,
-            "n_candidates": int(len(drug_idxs) - (len(heads_for_tail[t]) - 1)),
-        })
+        per_item.append(
+            {
+                "head": kg.idx_to_entity[h],
+                "tail": kg.idx_to_entity[t],
+                "head_name": kg.node_by_id[kg.idx_to_entity[h]]["name"],
+                "tail_name": kg.node_by_id[kg.idx_to_entity[t]]["name"],
+                "rank": rank,
+                "n_candidates": int(len(drug_idxs) - (len(heads_for_tail[t]) - 1)),
+            }
+        )
 
     ranks_arr = np.asarray(ranks, dtype=np.float64)
     metrics = {
         "n_evaluated": len(ranks),
-        "n_candidates_per_eval": int(len(drug_idxs)),
+        "n_candidates_per_eval": len(drug_idxs),
         "mean_rank": float(ranks_arr.mean()),
         "mrr": float((1.0 / ranks_arr).mean()),
         "hits_at_1": float((ranks_arr <= 1).mean()),
@@ -143,10 +140,7 @@ def evaluate(
         "ranks": ranks,
     }
     if verbose:
-        print(
-            f"\n  eval done in {time.time() - t0:.1f}s "
-            f"across {len(ranks)} held-out triples"
-        )
+        print(f"\n  eval done in {time.time() - t0:.1f}s across {len(ranks)} held-out triples")
     return {
         "protocol": (
             "leave-one-out over TREATS triples; filtered rank over all Drug "

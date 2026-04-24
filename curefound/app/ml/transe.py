@@ -15,18 +15,20 @@ with a PyKEEN pipeline. Public artifact contract stays the same:
         R [n_relations, dim]  — relation embeddings
     artifacts/transe_meta.json with idx_to_entity / idx_to_relation.
 """
+
 from __future__ import annotations
 
 import hashlib
 import json
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
 
-
-DEFAULT_ARTIFACTS = Path(__file__).resolve().parents[1] / "data" / "artifacts"
+# Anchored at the project root (`curefound/`) via `app.core.paths` -- the
+# module's on-disk depth changed in the pre-Phase-1 refactor.
+from app.core.paths import ARTIFACTS_DIR as DEFAULT_ARTIFACTS
 
 
 class ArtifactStaleError(RuntimeError):
@@ -61,8 +63,9 @@ def _l2_normalize(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     return x / np.maximum(n, eps)
 
 
-def _score(E: np.ndarray, R: np.ndarray,
-           h_idx: np.ndarray, r_idx: np.ndarray, t_idx: np.ndarray) -> np.ndarray:
+def _score(
+    E: np.ndarray, R: np.ndarray, h_idx: np.ndarray, r_idx: np.ndarray, t_idx: np.ndarray
+) -> np.ndarray:
     """Higher is better. Returns -||h + r - t||."""
     diff = E[h_idx] + R[r_idx] - E[t_idx]
     return -np.linalg.norm(diff, axis=-1)
@@ -85,7 +88,7 @@ def train(
     R = rng.uniform(-bound, bound, size=(n_relations, cfg.dim)).astype(np.float32)
     R = _l2_normalize(R)  # normalize relations once
 
-    T = np.asarray(triples, dtype=np.int64)     # [n_triples, 3]
+    T = np.asarray(triples, dtype=np.int64)  # [n_triples, 3]
     n_triples = T.shape[0]
 
     # Precompute per-relation (h→set(t)) and (t→set(h)) for filtered corruption.
@@ -108,7 +111,7 @@ def train(
         n_batches = 0
 
         for start in range(0, n_triples, cfg.batch_size):
-            batch = T[perm[start:start + cfg.batch_size]]
+            batch = T[perm[start : start + cfg.batch_size]]
             bsz = batch.shape[0]
             h, r, t = batch[:, 0], batch[:, 1], batch[:, 2]
 
@@ -128,11 +131,11 @@ def train(
                     if neg[i] in rt_to_h.get((r_rep[i], t_rep[i]), ()):
                         neg[i] = (neg[i] + 1) % n_entities
             h_neg = np.where(corrupt_tail, h_rep, neg)
-            t_neg = np.where(corrupt_tail, neg,   t_rep)
+            t_neg = np.where(corrupt_tail, neg, t_rep)
 
             # Scores (higher = better; loss uses negative => lower = better for grad)
-            pos_score = _score(E, R, h_rep, r_rep, t_rep)       # [B*K]
-            neg_score = _score(E, R, h_neg, r_rep, t_neg)       # [B*K]
+            pos_score = _score(E, R, h_rep, r_rep, t_rep)  # [B*K]
+            neg_score = _score(E, R, h_neg, r_rep, t_neg)  # [B*K]
             # margin ranking: loss = max(0, margin - (pos - neg)) = max(0, margin + neg - pos)
             loss_vec = np.maximum(0.0, cfg.margin - (pos_score - neg_score))
             active = loss_vec > 0.0
@@ -144,7 +147,7 @@ def train(
             # Gradient: d/dx ||h + r - t|| = (h + r - t) / ||h + r - t||
             # For active samples only. We update both pos and neg terms.
             def grad_norm(h_i, r_i, t_i):
-                v = E[h_i] + R[r_i] - E[t_i]
+                v = E[h_i] + R[r_i] - E[t_i]  # noqa: B023
                 n = np.linalg.norm(v, axis=-1, keepdims=True)
                 return v / np.maximum(n, 1e-12)
 
@@ -170,11 +173,11 @@ def train(
             # d(loss)/dR[r]     = +grad_norm_pos - grad_norm_neg
             # d(loss)/dE[h_neg] = -grad_norm_neg
             # d(loss)/dE[t_neg] = +grad_norm_neg
-            np.add.at(gE, h_rep[act_idx],  vp)
+            np.add.at(gE, h_rep[act_idx], vp)
             np.add.at(gE, t_rep[act_idx], -vp)
-            np.add.at(gR, r_rep[act_idx],  vp - vn)
+            np.add.at(gR, r_rep[act_idx], vp - vn)
             np.add.at(gE, h_neg[act_idx], -vn)
-            np.add.at(gE, t_neg[act_idx],  vn)
+            np.add.at(gE, t_neg[act_idx], vn)
 
             # Average over batch (use bsz*K count)
             denom = float(bsz * cfg.neg_per_pos)
@@ -184,16 +187,19 @@ def train(
         mean_loss = epoch_loss / max(n_batches, 1)
         loss_history.append(mean_loss)
         if verbose and (epoch % max(cfg.epochs // 20, 1) == 0 or epoch == cfg.epochs - 1):
-            print(f"  epoch {epoch+1:4d}/{cfg.epochs}  loss={mean_loss:.4f}  "
-                  f"({time.time() - t0:.1f}s)")
+            print(
+                f"  epoch {epoch + 1:4d}/{cfg.epochs}  loss={mean_loss:.4f}  "
+                f"({time.time() - t0:.1f}s)"
+            )
 
     if cfg.normalize_entities:
         E = _l2_normalize(E)
     return E, R, loss_history
 
 
-def save(E: np.ndarray, R: np.ndarray, kg, cfg: TransEConfig,
-         out_dir: Path = DEFAULT_ARTIFACTS) -> None:
+def save(
+    E: np.ndarray, R: np.ndarray, kg, cfg: TransEConfig, out_dir: Path = DEFAULT_ARTIFACTS
+) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     np.savez(out_dir / "transe.npz", E=E, R=R)
     (out_dir / "transe_meta.json").write_text(
@@ -215,13 +221,13 @@ def save(E: np.ndarray, R: np.ndarray, kg, cfg: TransEConfig,
 
 def load(artifacts_dir: Path = DEFAULT_ARTIFACTS) -> tuple[np.ndarray, np.ndarray, dict]:
     with np.load(artifacts_dir / "transe.npz") as z:
-        E = z["E"]; R = z["R"]
+        E = z["E"]
+        R = z["R"]
     meta = json.loads((artifacts_dir / "transe_meta.json").read_text(encoding="utf-8"))
     return E, R, meta
 
 
-def load_for_kg(kg, artifacts_dir: Path = DEFAULT_ARTIFACTS
-                ) -> tuple[np.ndarray, np.ndarray, dict]:
+def load_for_kg(kg, artifacts_dir: Path = DEFAULT_ARTIFACTS) -> tuple[np.ndarray, np.ndarray, dict]:
     """Same as `load`, plus a vocabulary-consistency assertion.
 
     Raises `ArtifactStaleError` if the entity vocabulary embedded in the
@@ -254,8 +260,10 @@ def load_for_kg(kg, artifacts_dir: Path = DEFAULT_ARTIFACTS
 
 
 def rank_tails(
-    E: np.ndarray, R: np.ndarray,
-    h_idx: int, r_idx: int,
+    E: np.ndarray,
+    R: np.ndarray,
+    h_idx: int,
+    r_idx: int,
     candidate_tails: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """For a fixed (h, r), score all candidate tails and return sorted by score desc.
@@ -269,8 +277,10 @@ def rank_tails(
 
 
 def rank_heads(
-    E: np.ndarray, R: np.ndarray,
-    r_idx: int, t_idx: int,
+    E: np.ndarray,
+    R: np.ndarray,
+    r_idx: int,
+    t_idx: int,
     candidate_heads: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     t_vec = E[t_idx]
@@ -282,14 +292,16 @@ def rank_heads(
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from kg.loader import load_kg
+    # Run as a module:
+    #     python -m app.ml.transe
+    from app.kg.loader import load_kg
 
     kg = load_kg()
     cfg = TransEConfig()
-    print(f"Training TransE on {len(kg.triples)} triples, "
-          f"{len(kg.idx_to_entity)} entities, {len(kg.idx_to_relation)} relations")
+    print(
+        f"Training TransE on {len(kg.triples)} triples, "
+        f"{len(kg.idx_to_entity)} entities, {len(kg.idx_to_relation)} relations"
+    )
     print(f"Config: {asdict(cfg)}")
     E, R, hist = train(kg.triples, len(kg.idx_to_entity), len(kg.idx_to_relation), cfg)
     save(E, R, kg, cfg)
@@ -305,6 +317,8 @@ if __name__ == "__main__":
     gaucher = kg.entity_to_idx["D:GAUCHER"]
     rank = int(np.where(ranked == gaucher)[0][0]) + 1
     print(f"Sanity: Imiglucerase (TREATS) -> ? ranked Gaucher at {rank}/{len(disease_idxs)}")
-    top5 = [(kg.node_by_id[kg.idx_to_entity[i]]["name"], float(s))
-            for i, s in zip(ranked[:5], scores[:5])]
+    top5 = [
+        (kg.node_by_id[kg.idx_to_entity[i]]["name"], float(s))
+        for i, s in zip(ranked[:5], scores[:5], strict=False)
+    ]
     print("  top-5:", top5)

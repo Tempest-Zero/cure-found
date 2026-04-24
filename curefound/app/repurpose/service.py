@@ -29,6 +29,7 @@ lookup; we no longer scan the full triple list per drug.
 Ranking logic is intentionally pluggable -- in Phase 2 the TransE call gets
 replaced by PyKEEN scoring; everything else stays the same.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -36,19 +37,19 @@ from typing import Any
 
 import numpy as np
 
-from kg.loader import KG
-from ml import transe as transe_mod
+from app.kg.loader import KG
+from app.ml import transe as transe_mod
 
 
 @dataclass
 class RepurposeResult:
     drug_id: str
     drug_name: str
-    model_score: float          # TransE score (higher = better)
-    graph_score: float          # Jaccard over pathway neighborhoods (0..1)
-    fused_score: float          # RRF (higher = better)
-    model_rank: int             # 1-indexed rank within the candidate set
-    graph_rank: int             # 1-indexed rank within the candidate set
+    model_score: float  # TransE score (higher = better)
+    graph_score: float  # Jaccard over pathway neighborhoods (0..1)
+    fused_score: float  # RRF (higher = better)
+    model_rank: int  # 1-indexed rank within the candidate set
+    graph_rank: int  # 1-indexed rank within the candidate set
     already_approved: bool
     approval_year: int | None
     evidence_paths: list[list[dict[str, Any]]]
@@ -94,8 +95,9 @@ class RepurposeService:
                             pathways.add(pw)
             self.disease_pathways[dis] = pathways
 
-    def predict(self, disease_id: str, top_k: int = 10,
-                include_already_approved: bool = False) -> list[RepurposeResult]:
+    def predict(
+        self, disease_id: str, top_k: int = 10, include_already_approved: bool = False
+    ) -> list[RepurposeResult]:
         if disease_id not in self.kg.node_by_id:
             raise KeyError(f"Unknown disease id: {disease_id}")
 
@@ -103,33 +105,24 @@ class RepurposeService:
         if include_already_approved:
             candidates = list(self.kg.drugs)
         else:
-            candidates = [
-                d for d in self.kg.drugs
-                if (d, disease_id) not in self.treats_set
-            ]
+            candidates = [d for d in self.kg.drugs if (d, disease_id) not in self.treats_set]
         # Alphabetical order -> deterministic rank assignment in ties (H7).
         candidates.sort()
         if not candidates:
             return []
 
-        cand_idxs = np.array(
-            [self.kg.entity_to_idx[d] for d in candidates], dtype=np.int64
-        )
+        cand_idxs = np.array([self.kg.entity_to_idx[d] for d in candidates], dtype=np.int64)
 
         # ---- 2. Model scores over the candidate set only ---- #
         r_idx = self.kg.relation_to_idx["TREATS"]
         dis_idx = self.kg.entity_to_idx[disease_id]
-        ranked_idx, ranked_scores = transe_mod.rank_heads(
-            self.E, self.R, r_idx, dis_idx, cand_idxs
-        )
+        ranked_idx, ranked_scores = transe_mod.rank_heads(self.E, self.R, r_idx, dis_idx, cand_idxs)
         model_score_of = {
             self.kg.idx_to_entity[int(e)]: float(s)
-            for e, s in zip(ranked_idx, ranked_scores)
+            for e, s in zip(ranked_idx, ranked_scores, strict=False)
         }
         # Assign ranks with canonical-id tiebreak (H7).
-        model_ranked = sorted(
-            candidates, key=lambda d: (-model_score_of[d], d)
-        )
+        model_ranked = sorted(candidates, key=lambda d: (-model_score_of[d], d))
         model_rank_of = {d: i + 1 for i, d in enumerate(model_ranked)}
 
         # ---- 3. Graph scores over the candidate set only ---- #
@@ -143,9 +136,7 @@ class RepurposeService:
                 union = len(dp | dis_pw) or 1
                 graph_score_of[d] = len(dp & dis_pw) / union
 
-        graph_ranked = sorted(
-            candidates, key=lambda d: (-graph_score_of[d], d)
-        )
+        graph_ranked = sorted(candidates, key=lambda d: (-graph_score_of[d], d))
         graph_rank_of = {d: i + 1 for i, d in enumerate(graph_ranked)}
 
         # ---- 4. Fuse by RRF (k=60 is standard) ---- #
@@ -180,16 +171,16 @@ class RepurposeService:
 
 
 def build_default_service() -> RepurposeService:
-    from kg.loader import load_kg
+    from app.kg.loader import load_kg
+
     kg = load_kg()
     E, R, _ = transe_mod.load_for_kg(kg)
     return RepurposeService(kg, E, R)
 
 
 if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    # Run as a module for correct package resolution:
+    #     python -m app.repurpose.service
     svc = build_default_service()
     for dis in ["D:GAUCHER", "D:NPC", "D:FABRY"]:
         print(f"\n--- Repurposing candidates for {svc.kg.node_by_id[dis]['name']} ---")
@@ -202,11 +193,6 @@ if __name__ == "__main__":
             )
             for p in r.evidence_paths[:1]:
                 chain = " -> ".join(
-                    f"[{x['rel']}:{x['direction']}] "
-                    f"{svc.kg.node_by_id[x['to']]['name']}"
-                    for x in p
+                    f"[{x['rel']}:{x['direction']}] {svc.kg.node_by_id[x['to']]['name']}" for x in p
                 )
-                print(
-                    f"        via: "
-                    f"{svc.kg.node_by_id[p[0]['from']]['name']} {chain}"
-                )
+                print(f"        via: {svc.kg.node_by_id[p[0]['from']]['name']} {chain}")
