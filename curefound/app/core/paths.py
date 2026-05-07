@@ -28,10 +28,10 @@ SEED_KG_PATH: Path = SEED_DIR / "kg.json"
 ARTIFACTS_DIR: Path = DATA_DIR / "artifacts"
 RAW_DIR: Path = DATA_DIR / "raw"
 
-# Static frontend (the MVP's single-page Cytoscape demo) and Phase 6 build
-# output. `app.main` mounts these when they exist on disk; missing
-# directories are not an error.
-FRONTEND_DIR: Path = PROJECT_ROOT / "frontend"
+# Static frontend (Vite-built React app, output to `frontend/dist/`).
+# `app.main` mounts these when they exist on disk; missing directories
+# are not an error so `pytest` runs without a built frontend.
+FRONTEND_DIR: Path = PROJECT_ROOT / "frontend" / "dist"
 FRONTEND_INDEX: Path = FRONTEND_DIR / "index.html"
 
 

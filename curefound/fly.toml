@@ -1,0 +1,59 @@
+# ============================================================================
+# Fly.io configuration for CureFound
+#
+# First-time setup (one-shot, from your machine):
+#   fly auth login                       # browser auth
+#   fly launch --no-deploy --copy-config  # accept defaults; this rewrites the
+#                                         # `app` slug to a unique value
+#   fly deploy                            # builds with docker/Dockerfile
+#
+# Subsequent deploys:
+#   fly deploy
+#
+# Logs / status:
+#   fly logs
+#   fly status
+#   fly open               # opens https://<app-slug>.fly.dev in browser
+# ============================================================================
+
+# Replace this with your unique app slug after `fly launch`.
+app = "curefound"
+primary_region = "fra"   # Frankfurt — change to "iad" / "sin" / etc. if you prefer
+
+[build]
+  dockerfile = "docker/Dockerfile"
+
+[env]
+  ENVIRONMENT = "production"
+  KG_BACKEND = "networkx"
+  SEED_KG_PATH = "data/seed/kg.json"
+  ARTIFACTS_DIR = "data/artifacts"
+  LOG_LEVEL = "INFO"
+  # Hide /docs in prod by default; flip to "1" if you want OpenAPI public.
+  ENABLE_DOCS = "1"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"      # Free-tier-friendly: stop when idle.
+  auto_start_machines = true       # Wake on incoming request (cold start ~5s).
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 25
+    hard_limit = 50
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

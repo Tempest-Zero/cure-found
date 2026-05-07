@@ -68,8 +68,9 @@ class RepurposeCandidate(BaseModel):
     model_score: float = Field(
         ...,
         description=(
-            "TransE score, -||h + r - t||_2. Higher is better; typical range "
-            "[-3, 0] on the seed KG, scale is model-dependent."
+            "RotatE score, -||h o r - t||_2 in complex space (relational rotation, "
+            "Sun et al. ICLR 2019). Higher is better; scale is model-dependent and "
+            "not comparable across retrains."
         ),
     )
     graph_score: float = Field(

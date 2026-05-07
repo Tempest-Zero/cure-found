@@ -3,7 +3,7 @@ Drug-repurposing inference service.
 
 Inputs : disease_id (canonical), top_k, include_already_approved
 Outputs: ranked list of drug candidates with:
-          - model score (TransE)
+          - model score (RotatE — relational rotation in complex space)
           - graph evidence score (pathway-overlap Jaccard)
           - fused score (reciprocal-rank fusion, k=60)
           - evidence subgraph (short paths drug -> disease)
@@ -26,8 +26,9 @@ heterogeneous edges arrived.
 Approval lookup (fix for H2): `kg.treats_edge[(drug, disease)]` is an O(1)
 lookup; we no longer scan the full triple list per drug.
 
-Ranking logic is intentionally pluggable -- in Phase 2 the TransE call gets
-replaced by PyKEEN scoring; everything else stays the same.
+Ranking logic is intentionally pluggable -- in Phase 2 the RotatE call gets
+replaced by a PyKEEN pipeline (CompGCN, RotatE-MoE, etc.); everything else
+stays the same.
 """
 
 from __future__ import annotations
@@ -38,14 +39,14 @@ from typing import Any
 import numpy as np
 
 from app.kg.loader import KG
-from app.ml import transe as transe_mod
+from app.ml import rotate as kge_mod
 
 
 @dataclass
 class RepurposeResult:
     drug_id: str
     drug_name: str
-    model_score: float  # TransE score (higher = better)
+    model_score: float  # RotatE score (higher = better)
     graph_score: float  # Jaccard over pathway neighborhoods (0..1)
     fused_score: float  # RRF (higher = better)
     model_rank: int  # 1-indexed rank within the candidate set
@@ -116,7 +117,7 @@ class RepurposeService:
         # ---- 2. Model scores over the candidate set only ---- #
         r_idx = self.kg.relation_to_idx["TREATS"]
         dis_idx = self.kg.entity_to_idx[disease_id]
-        ranked_idx, ranked_scores = transe_mod.rank_heads(self.E, self.R, r_idx, dis_idx, cand_idxs)
+        ranked_idx, ranked_scores = kge_mod.rank_heads(self.E, self.R, r_idx, dis_idx, cand_idxs)
         model_score_of = {
             self.kg.idx_to_entity[int(e)]: float(s)
             for e, s in zip(ranked_idx, ranked_scores, strict=False)
@@ -174,7 +175,7 @@ def build_default_service() -> RepurposeService:
     from app.kg.loader import load_kg
 
     kg = load_kg()
-    E, R, _ = transe_mod.load_for_kg(kg)
+    E, R, _ = kge_mod.load_for_kg(kg)
     return RepurposeService(kg, E, R)
 
 

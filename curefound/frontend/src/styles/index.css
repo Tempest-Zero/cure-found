@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CureFound — design tokens (Tailwind v4 @theme)
+   AI-Native + Minimalism + Dark Mode (OLED) + Swiss editorial
+   ============================================================ */
+@theme {
+  --color-bg-0: #0A0A0B;
+  --color-bg-1: #101013;
+  --color-bg-2: #17181B;
+  --color-bg-3: #1F2024;
+  --color-line: #23252B;
+  --color-line-2: #2C2F36;
+
+  --color-fg-0: #F0F1F4;
+  --color-fg-1: #E8E9EC;
+  --color-fg-2: #9398A1;
+  --color-fg-3: #6B7280;
+  --color-fg-4: #4A4F58;
+
+  --color-acc: #5EE38B;
+  --color-acc-2: #7BEAA0;
+  --color-acc-3: #3FBE6E;
+
+  --color-t-disease: #F58A8A;
+  --color-t-drug:    #5EE38B;
+  --color-t-gene:    #C8A8FF;
+  --color-t-protein: #7FB8FF;
+  --color-t-pathway: #F5B947;
+  --color-t-symptom: #9398A1;
+
+  --color-ok:   #5EE38B;
+  --color-warn: #F5B947;
+  --color-err:  #F56565;
+
+  --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-sans:    "Inter", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   Base
+   ============================================================ */
+:root { color-scheme: dark; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--color-bg-0);
+  color: var(--color-fg-1);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+::selection { background: var(--color-acc); color: #001a07; }
+:focus-visible { outline: 2px solid var(--color-acc); outline-offset: 2px; border-radius: 4px; }
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); font-feature-settings: "tnum", "ss01"; font-variant-numeric: tabular-nums; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Scrollbar — dark, minimal */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-2);
+  border-radius: 6px;
+  border: 2px solid var(--color-bg-0);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--color-fg-4); }
+
+/* ============================================================
+   Aceternity-style helpers
+   ============================================================ */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.spotlight-mask {
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 40%, transparent 100%);
+}
+
+.glow-acc { box-shadow: 0 0 0 1px rgba(94,227,139,.35), 0 0 32px rgba(94,227,139,.18); }
+.text-balance { text-wrap: balance; }
+.text-pretty  { text-wrap: pretty; }
+
+/* Moving border — used on the eval table & primary input */
+@keyframes mb-spin { to { --mb-angle: 360deg; } }
+@property --mb-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.moving-border {
+  position: relative;
+  isolation: isolate;
+}
+.moving-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--mb-angle), transparent 0%, var(--color-acc) 18%, transparent 38%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: mb-spin 6s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.moving-border > * { position: relative; z-index: 1; }
+
+/* Beam keyframes (BackgroundBeams fallback) */
+@keyframes beam {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}

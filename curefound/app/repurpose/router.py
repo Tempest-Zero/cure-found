@@ -2,7 +2,7 @@
 
 Route stays thin: validates input, resolves external ids, delegates
 ranking to `RepurposeService.predict`, marshals the result into the
-response envelope. All business logic (TransE scoring, pathway Jaccard,
+response envelope. All business logic (RotatE scoring, pathway Jaccard,
 RRF fusion, evidence paths) is in the service.
 """
 

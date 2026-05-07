@@ -22,7 +22,6 @@ from fastapi.testclient import TestClient
 
 from app.kg.loader import KG, KGValidationError, load_kg
 from app.main import app
-from app.ml import transe as transe_mod
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -305,21 +304,27 @@ def test_kg_schema_validation_catches_injected_bugs(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------- #
-# H4: TransE artifact staleness is detected
+# H4: RotatE artifact staleness is detected (the `transe` module was
+# removed; the same staleness contract is now enforced inside `rotate.py`
+# and exercised by the integration tests via the lifespan loader.)
 # --------------------------------------------------------------------- #
 
 
-def test_transe_load_for_kg_detects_vocab_mismatch(kg: KG) -> None:
-    # Tamper with the loaded KG's entity vocabulary to simulate an edit-without-
-    # retrain. load_for_kg should raise.
+def test_rotate_load_for_kg_detects_vocab_mismatch(kg: KG) -> None:
+    """If we corrupt the KG vocabulary, RotatE's load_for_kg must refuse the
+    saved npz (the SHA-256 digest of the sorted entity list is checked)."""
+    from app.ml import rotate as kge_mod
+
     tampered = load_kg()
     tampered.idx_to_entity = ["FAKE:0", *kg.idx_to_entity[1:]]
-    with pytest.raises(transe_mod.ArtifactStaleError):
-        transe_mod.load_for_kg(tampered)
+    with pytest.raises(kge_mod.ArtifactStaleError):
+        kge_mod.load_for_kg(tampered)
 
 
-def test_transe_load_for_kg_succeeds_on_matching_vocab(kg: KG) -> None:
-    E, R, meta = transe_mod.load_for_kg(kg)
+def test_rotate_load_for_kg_succeeds_on_matching_vocab(kg: KG) -> None:
+    from app.ml import rotate as kge_mod
+
+    E, R, meta = kge_mod.load_for_kg(kg)
     assert E.shape[0] == len(kg.idx_to_entity)
     assert R.shape[0] == len(kg.idx_to_relation)
     assert "entity_vocab_sha256" in meta

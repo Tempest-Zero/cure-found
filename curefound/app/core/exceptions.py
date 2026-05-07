@@ -57,9 +57,9 @@ class KGNotLoadedError(AppError):
 
 
 class ArtifactStaleError(AppError):
-    """The TransE .npz on disk was trained against a different KG
-    vocabulary than the one currently loaded. Matches the legacy
-    `ml.transe.ArtifactStaleError` contract; the typed error stays
+    """The KGE (RotatE) .npz on disk was trained against a different KG
+    vocabulary than the one currently loaded. Matches the
+    `ml.rotate.ArtifactStaleError` contract; the typed error stays
     defined there and this alias is for handler matching."""
 
     code = "artifact_stale"

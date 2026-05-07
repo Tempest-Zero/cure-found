@@ -1,121 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>CureFound — biomedical KG prototype</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/ui/style.css" />
-  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-</head>
-<body>
-  <header>
-    <div class="title">
-      <h1>CureFound</h1>
-      <span class="tag">biomedical KG prototype · MVP</span>
-    </div>
-    <div class="stats" id="stats">loading KG stats…</div>
-  </header>
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-  <nav>
-    <button class="tab active" data-tab="repurpose">Drug repurposing</button>
-    <button class="tab" data-tab="diagnose">Symptom-based diagnosis</button>
-    <button class="tab" data-tab="explore">KG explorer</button>
-    <span class="disclaimer">Research prototype. Not for clinical use.</span>
-  </nav>
+    <title>CureFound — Drug repurposing on a biomedical knowledge graph</title>
+    <meta name="description" content="A research prototype that ranks repurposable drug candidates for rare lysosomal storage disorders using a RotatE knowledge-graph embedding model. MRR 0.380 · Hits@10 0.750." />
+    <meta name="theme-color" content="#0A0A0B" />
 
-  <main>
-    <!-- ============ REPURPOSE ============ -->
-    <section class="panel active" id="panel-repurpose">
-      <div class="controls">
-        <label>Disease
-          <input type="text" id="rep-search" placeholder="e.g. Niemann-Pick, Gaucher, Fabry…" autocomplete="off" />
-          <div id="rep-suggest" class="suggest"></div>
-        </label>
-        <label class="chk">
-          <input type="checkbox" id="rep-include-approved" />
-          include already-approved
-        </label>
-        <label>top K
-          <input type="number" id="rep-topk" value="10" min="1" max="50" />
-        </label>
-        <button id="rep-run">Predict drugs</button>
-      </div>
-      <div class="split">
-        <div class="results-pane">
-          <h2 id="rep-title">Ranked repurposing candidates</h2>
-          <ol id="rep-results" class="results"></ol>
-        </div>
-        <div class="graph-pane">
-          <div class="graph-header">
-            <span id="rep-graph-title">select a candidate to see evidence subgraph</span>
-          </div>
-          <div id="rep-graph" class="graph"></div>
-        </div>
-      </div>
-    </section>
+    <meta property="og:title" content="CureFound — Drug repurposing on a biomedical KG" />
+    <meta property="og:description" content="RotatE on a 99-node biomedical knowledge graph for rare lysosomal disorders. MRR 0.380 · Hits@10 0.750. Research prototype." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- ============ DIAGNOSE ============ -->
-    <section class="panel" id="panel-diagnose">
-      <div class="controls">
-        <label>Add symptom
-          <input type="text" id="diag-search" placeholder="e.g. seizures, hepatomegaly…" autocomplete="off" />
-          <div id="diag-suggest" class="suggest"></div>
-        </label>
-        <label>top K
-          <input type="number" id="diag-topk" value="10" min="1" max="50" />
-        </label>
-        <button id="diag-run">Diagnose</button>
-        <button id="diag-clear" class="secondary">clear</button>
-        <div class="preset-row">
-          <span>quick presets:</span>
-          <button class="preset" data-ids="HP:0010729,HP:0001252,HP:0001263,HP:0001250">cherry-red + hypotonic</button>
-          <button class="preset" data-ids="HP:0002240,HP:0001744,HP:0000605,HP:0001251,HP:0001263">NPC-like</button>
-          <button class="preset" data-ids="HP:0001073,HP:0000077,HP:0009830,HP:0001638">Fabry-like</button>
-          <button class="preset" data-ids="HP:0002240,HP:0001744,HP:0001903,HP:0001873,HP:0002653">Gaucher-like</button>
-        </div>
-      </div>
-      <div class="chips" id="diag-chips"></div>
-      <div class="split">
-        <div class="results-pane">
-          <h2>Ranked disease candidates</h2>
-          <ol id="diag-results" class="results"></ol>
-        </div>
-        <div class="graph-pane">
-          <div class="graph-header">
-            <span id="diag-graph-title">select a candidate to see its KG neighborhood</span>
-          </div>
-          <div id="diag-graph" class="graph"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ EXPLORE ============ -->
-    <section class="panel" id="panel-explore">
-      <div class="controls">
-        <label>Search node
-          <input type="text" id="exp-search" placeholder="any disease, gene, drug, pathway, symptom…" autocomplete="off" />
-          <div id="exp-suggest" class="suggest"></div>
-        </label>
-        <label>k (hops)
-          <input type="number" id="exp-k" value="2" min="1" max="3" />
-        </label>
-        <label>max nodes
-          <input type="number" id="exp-max" value="80" min="10" max="200" />
-        </label>
-      </div>
-      <div id="exp-graph" class="graph full"></div>
-      <div id="exp-node-info" class="node-info"></div>
-    </section>
-  </main>
-
-  <footer>
-    <span>CureFound FYP prototype</span>
-    <span>|</span>
-    <a href="/docs" target="_blank">OpenAPI docs</a>
-    <span>|</span>
-    <a href="/stats" target="_blank">KG stats</a>
-  </footer>
-
-  <script src="/ui/app.js"></script>
-</body>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

@@ -1,9 +1,13 @@
 # CureFound
 
-**Status: pre-Phase-1 refactor complete.** 99-node seed KG · TransE embeddings ·
-FastAPI + Cytoscape.js UI · Docker scaffolding · five Phase-1 ingestors written ·
-Neo4j backend implemented · 88 tests (23 regression + 65 integration) + 17 smoke
-checks, all green.
+**Drug repurposing on a curated biomedical knowledge graph for rare lysosomal
+storage disorders.** RotatE knowledge-graph embeddings (PyTorch training,
+NumPy inference) + Jaccard pathway-overlap + Reciprocal Rank Fusion, served
+behind a FastAPI backend with a React/Vite frontend. KG: 673 entities, 1057
+edges across 7 relation types — covering 13 LSDs + Cystic Fibrosis +
+Huntington, enriched with 894 HPO phenotype annotations from the official
+[`phenotype.hpoa`](https://github.com/obophenotype/human-phenotype-ontology)
+release.
 
 > ⚠ **Research prototype. Not for clinical use.**
 
@@ -14,7 +18,7 @@ checks, all green.
 Two demo flows, both working end-to-end against the 99-node seed KG:
 
 1. **Drug repurposing.** Given a rare disease (e.g. Niemann-Pick C), rank drug
-   candidates most likely to treat it. Hybrid ranker: TransE link-prediction
+   candidates most likely to treat it. Hybrid ranker: **RotatE** link-prediction
    `(drug, TREATS, disease)` + Jaccard pathway-neighborhood overlap + Reciprocal
    Rank Fusion. Returns evidence paths per candidate for explainability.
 
@@ -28,63 +32,38 @@ interactive Cytoscape.js graph.
 
 ---
 
-## Quickstart — MVP (no Neo4j, no Docker)
+## Quickstart (local dev)
 
 ```bash
 cd curefound
-
-# Install (editable + dev tools)
+python -m venv .venv && source .venv/Scripts/activate    # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
-# 1. Build the seed KG  (-> data/seed/kg.json)
-python run.py seed
+# Train RotatE on the seed KG (~20 min on CPU; artefacts -> data/artifacts/)
+python -m app.ml.rotate
 
-# 2. Train TransE       (-> data/artifacts/, ~6 s)
-python run.py train
+# Serve API + frontend
+python -m uvicorn app.main:app --reload
+#   API:           http://localhost:8000/
+#   OpenAPI docs:  http://localhost:8000/docs
+#   Stats:         http://localhost:8000/stats
 
-# 3. Serve
-python run.py serve
-# http://localhost:8000/       interactive UI
-# http://localhost:8000/docs   OpenAPI / Swagger
+# Frontend dev server (separate terminal, talks to FastAPI on :8000)
+cd frontend && npm install && npm run dev
+#   http://localhost:5173/
 ```
 
-End-to-end smoke test (17 checks, no server needed):
+Tests:
 
 ```bash
-python run.py smoke
+pytest tests/regression tests/unit -q       # 23 + 6 = 29 tests, ~30 s
 ```
 
-Full test suite (88 tests):
+Held-out evaluation with bootstrap CIs:
 
 ```bash
-pytest tests/regression tests/integration -v
-```
-
----
-
-## Quickstart — Phase 1 (Neo4j + full KG ingest)
-
-See **[PHASE1_SETUP.md](PHASE1_SETUP.md)** for the complete walkthrough. Short version:
-
-```bash
-# 1. Copy and edit .env
-cp .env.example .env
-# Set NEO4J_PASSWORD, DATAVERSE_API_TOKEN (for PrimeKG), etc.
-
-# 2. Start Neo4j
-docker compose up -d neo4j
-
-# 3. Download raw data (~5 GB: PrimeKG, DrugCentral, HPO, Orphanet, Reactome)
-python -m app.etl.fetch_all
-
-# 4. Run ingestors and load into Neo4j
-python -m app.etl.ingest.all --target neo4j
-
-# 5. Train TransE on the full KG
-python run.py train
-
-# 6. Serve against Neo4j
-KG_BACKEND=neo4j python run.py serve
+python -m app.ml.eval --epochs 300 --bootstrap 2000
+# Writes data/artifacts/eval_report.json with per-fold ranks and CI bounds.
 ```
 
 ---
@@ -96,20 +75,18 @@ curefound/
 ├── app/                            Python package
 │   ├── main.py                     create_app() factory + module-level app
 │   ├── core/
-│   │   ├── config.py               Settings(BaseSettings) — reads .env
+│   │   ├── config.py               Settings(BaseSettings) -- reads .env
 │   │   ├── logging.py              structlog + asgi-correlation-id
 │   │   ├── exceptions.py           AppError hierarchy + FastAPI handlers
-│   │   ├── lifespan.py             startup/shutdown: load KG + TransE
+│   │   ├── lifespan.py             startup: load KG + RotatE
 │   │   └── paths.py                project-root resolution
 │   ├── kg/
-│   │   ├── loader.py               NetworkX KG (seed / networkx backend)
-│   │   ├── neo4j_backend.py        Neo4j 5 Bolt backend (same Protocol)
-│   │   ├── backend.py              KGBackend runtime_checkable Protocol
+│   │   ├── loader.py               NetworkX KG (single in-process backend)
 │   │   ├── router.py               /stats /search /node /subgraph
 │   │   ├── schemas.py              NodeBrief, NodeDetail, SubgraphResponse
 │   │   └── deps.py                 KGDep = Annotated[KG, Depends(get_kg)]
 │   ├── repurpose/
-│   │   ├── service.py              TransE + Jaccard + RRF pipeline
+│   │   ├── service.py              RotatE + Jaccard + RRF pipeline
 │   │   ├── router.py               POST /repurpose
 │   │   ├── schemas.py              RepurposeRequest/Response/Candidate
 │   │   └── deps.py                 RepurposeDep
@@ -122,51 +99,34 @@ curefound/
 │   │   ├── router.py               GET /health
 │   │   └── schemas.py              HealthResponse
 │   ├── ml/
-│   │   ├── transe.py               Pure-NumPy TransE trainer + evaluator
-│   │   └── eval.py                 Leave-one-out filtered evaluation
+│   │   ├── rotate.py               RotatE trainer (PyTorch) + numpy inference
+│   │   ├── deps.py                 KGEArtifacts dependency injection
+│   │   └── eval.py                 LOO filtered evaluation + bootstrap CIs
 │   └── etl/
-│       ├── build_seed_kg.py        Hand-curated 99-node LSD seed KG
-│       ├── id_map_service.py       xref → canonical-id resolver
-│       ├── fetch_all.py            Download orchestrator (Phase 1)
-│       ├── _base.py                Ingestor ABC + KGAccumulator
-│       └── ingest/
-│           ├── primekg.py          PrimeKG backbone (LSD-scope filter)
-│           ├── drugcentral.py      Authoritative TREATS + approval_year
-│           ├── hpo.py              HPO DAG + HPOA disease-phenotype
-│           ├── orphanet.py         Orphanet rare-disease registry
-│           ├── reactome.py         Homo sapiens pathways
-│           └── all.py              Pipeline runner (--target json|neo4j)
+│       └── expand_hpo_lsd.py       Filter HPO HPOA to LSD scope, merge into KG
 ├── tests/
 │   ├── conftest.py                 Shared fixtures: test_app, sync/async client
-│   ├── regression/
-│   │   └── test_backend.py         23 pins — one per named defect (C1-C5, H1-H7, M1-M4)
-│   ├── integration/
-│   │   ├── conftest.py             int_client respects KG_BACKEND env var
-│   │   ├── test_admin_router.py    /health + dual-mount parity
-│   │   ├── test_kg_router.py       /stats /search /node /subgraph (31 tests)
-│   │   ├── test_repurpose_router.py POST /repurpose (15 tests)
-│   │   └── test_diagnose_router.py POST /diagnose (14 tests)
-│   └── e2e/
-│       └── smoke.py                17 end-to-end checks (python run.py smoke)
+│   ├── regression/test_backend.py  23 pins -- one per named defect
+│   ├── unit/                       Pure-logic tests for kg/loader, services
+│   └── e2e/smoke.py                End-to-end demo flow checks
 ├── frontend/
-│   ├── index.html                  Single-page Cytoscape.js UI (3 tabs)
-│   ├── style.css
-│   └── app.js
+│   ├── index.html                  Vite entry
+│   ├── vite.config.ts              base: "/ui/" + manualChunks code-split
+│   ├── package.json                React 18 + Tailwind v4 + Framer Motion + GSAP
+│   └── src/
+│       ├── App.tsx                 NavBar + Hero + lazy-loaded sections
+│       ├── components/             Repurpose, Diagnose, Explorer, Eval, Methods
+│       └── lib/                    types + api() + ApiStatusChip
 ├── data/
-│   ├── seed/kg.json                99 nodes · 163 edges (generated)
-│   ├── artifacts/                  TransE weights + metadata (generated)
-│   └── raw/                        .gitignored; fetch_all.py target
-├── docker/
-│   ├── Dockerfile.backend          Multi-stage Python 3.11-slim
-│   └── neo4j/init.cypher           Constraints + indexes + FTS index
-├── scripts/
-│   ├── dev.sh                      Local dev wrapper
-│   └── lint.sh                     ruff check --fix + ruff format
-├── compose.yml                     Neo4j 5 service + (commented) backend
+│   ├── seed/kg.json                673 nodes / 1057 edges (HPO-expanded LSD KG)
+│   ├── seed/kg-mvp.json            Original 99-node curated baseline
+│   └── artifacts/                  RotatE weights + metadata + eval report
+├── docker/Dockerfile               Multi-stage: Vite -> Python slim (single image)
+├── fly.toml                        Fly.io deploy config (remote builder)
+├── .github/workflows/ci.yml        Lint + tests + Docker build on push
 ├── .env.example                    All Settings fields documented
-├── pyproject.toml                  Deps + Ruff + pytest config
-├── run.py                          Cross-platform task runner
-└── PHASE1_SETUP.md                 Phase 1 detailed setup guide
+├── pyproject.toml                  Runtime + dev deps, ruff + pytest config
+└── run.py                          Cross-platform task runner
 ```
 
 ---
@@ -211,55 +171,106 @@ curl http://localhost:8000/stats
 
 ---
 
-## Seed KG (MVP baseline)
+## Seed KG (current state, post HPO-HPOA expansion)
 
 ```
-99 entities · 7 relations · 163 triples
-  Disease: 13   Gene: 13   Protein: 16
-  Drug:    19   Pathway: 12   Symptom: 26
+673 entities · 7 relations · 1057 triples
+  Disease: 13     Gene: 13       Protein: 16
+  Drug:    19     Pathway: 12    Symptom: 600 (26 curated + 574 from HPO HPOA)
 
-  CAUSES: 14    ENCODES: 13   TARGETS: 19
-  TREATS: 16    HAS_PHENOTYPE: 68
-  PARTICIPATES_IN: 31   ASSOCIATED_WITH: 2
+  HAS_PHENOTYPE:   962      (+894 from real HPO HPOA disease-phenotype rows)
+  PARTICIPATES_IN:  31      ENCODES:  13      CAUSES:  14
+  TARGETS:          19      TREATS:   16      ASSOCIATED_WITH:  2
 ```
 
 Focus: **Lysosomal Storage Disorders** (Gaucher, Fabry, Niemann-Pick A/B/C, Pompe,
 Tay-Sachs, Krabbe, MPS-I/II, MLD) + Cystic Fibrosis and Huntington as non-LSD
 controls.
 
+**Provenance.** The original 99-node hand-curated seed remains in
+`data/seed/kg-mvp.json`. The expanded version was produced by
+`python -m app.etl.expand_hpo_lsd`, which filters the official
+`phenotype.hpoa` annotations to OMIM/ORPHA IDs that match our 13 diseases
+(894 added rows after deduplication, qualifier!=NOT, aspect=P). New
+phenotype nodes carry the `S:HP_NNNNNNN` id format. Disease and drug
+vocabularies are intentionally **frozen** so the TREATS evaluation set
+stays the same 16 triples and the comparison with the pre-expansion
+RotatE numbers is meaningful.
+
 ---
 
-## Held-out evaluation
+## The model — RotatE
 
-`python run.py eval` runs the Bordes-2013 / PyKEEN leave-one-out filtered protocol:
-retrain TransE on N-1 `TREATS` triples, rank every Drug for each held-out tail,
-filter known-true heads before ranking.  Report written to
-`data/artifacts/eval_report.json`.
+**RotatE** (Sun et al., *ICLR 2019*) — *Knowledge Graph Embedding by Relational
+Rotation in Complex Space*. Implemented in **PyTorch** end-to-end with `nn.Embedding`
+layers, Adam optimizer, and self-adversarial sigmoid loss.
 
-**Seed KG · 16 held-out TREATS · 19 Drug candidates · TransE dim=64 · 800 epochs:**
+**Geometry.** Each entity is a complex vector `h ∈ ℂ^d`; each relation is a unit-modulus
+complex vector `r ∈ ℂ^d` parameterized as `r = e^(iθ)` (only the phase angles θ ∈ ℝ^d
+are learned). The score function is
 
-| Metric | Value |
-|---|---|
-| Mean rank (filtered) | **9.88 / 19** |
-| MRR (filtered) | **0.131** |
-| Hits@1 | **0.000** |
-| Hits@3 | **0.062** |
-| Hits@10 | **0.562** |
+```
+f(h, r, t) = −‖h ∘ r − t‖₂        (∘ = element-wise complex multiplication)
+```
 
-These numbers are the *honest baseline* for the thesis.  TransE on a 99-node graph
-with 16 training signals is expected to be weak.  The hybrid ranker (TransE + Jaccard
-pathway score + RRF) still surfaces correct LSD candidates because the graph-score
-carries most of the signal at this graph scale. Phase 2 will replace this with a
-PyKEEN pipeline (RotatE + CompGCN) on the full PrimeKG-derived graph and reproduce
-the Hetionet baseline for comparison.
+i.e. `t` should be reachable from `h` by per-coordinate rotation by the relation's
+phase. This is strictly more expressive than TransE's translation `h + r ≈ t` and
+structurally encodes three relation patterns present in our KG:
 
-**Known candidates surfaced by the hybrid ranker (top-10, not in the TREATS graph):**
+| Pattern | Example | Why TransE fails | Why RotatE works |
+|---|---|---|---|
+| Antisymmetric | `Drug TREATS Disease` (not the reverse) | `h + r = t` does not enforce `t + r ≠ h` | `h ∘ r = t` and `t ∘ r ≠ h` whenever `θ ≠ 0, π` |
+| Symmetric | `Gene ASSOCIATED_WITH Gene` | forces `r = 0`, collapsing the embedding | `θ = 0` is the identity rotation — no collapse |
+| Compositional | `Gene→ENCODES→Protein→PARTICIPATES_IN→Pathway` | translations don't compose meaningfully | rotations compose by phase addition: `θ₁ + θ₂` |
 
-- **Hydroxypropyl-β-cyclodextrin** for Niemann-Pick C (clinical trial stage)
-- **Ambroxol** for Gaucher (chaperone candidate)
-- **Vorinostat / Rapamycin** mid-table for LSDs via autophagy / HDAC pathways
+**Training (`app/ml/rotate.py`).** PyTorch `nn.Module` with `nn.Embedding(n_entities,
+2·dim)` for real‖imaginary entity parts and `nn.Embedding(n_relations, dim)` for
+relation phases. Loss is the self-adversarial negative-sampling form from the paper:
 
-### Diagnostic accuracy on hand-picked LSD profiles
+```
+L = −log σ(γ − d_pos) − Σⱼ p(h'ⱼ, r, t'ⱼ) · log σ(d_neg,ⱼ − γ)
+p(h'ⱼ, r, t'ⱼ) = softmax(α · score(h'ⱼ, r, t'ⱼ))      (self-adversarial weighting)
+```
+
+with γ = 6.0, α = 0.5, Adam lr = 1e-3, 64 negatives per positive, gradient clip = 1.0.
+
+**Inference.** Pure NumPy from saved `data/artifacts/rotate.npz`. PyTorch is only
+needed at training time; the API server loads complex64 numpy arrays and computes
+`−‖h ∘ r − t‖` directly. Cold-start cost: ~3 ms.
+
+### Held-out evaluation
+
+`python -m app.ml.eval` runs the Sun-2019 / PyKEEN leave-one-out filtered
+protocol: retrain RotatE on N-1 `TREATS` triples, rank every Drug as a
+possible head for each held-out tail, filter other known-true heads
+before ranking. Report written to `data/artifacts/eval_report.json`,
+including a non-parametric **bootstrap-95% CI** over the per-fold ranks.
+
+> Numbers below are placeholders pending the post-HPO-expansion eval run
+> (in flight on CPU; this README will be regenerated once
+> `eval_report.json` lands). The methodology table — what each model
+> family structurally supports — stays valid regardless of the headline
+> numbers.
+
+**KG: 673 entities · 1057 edges · 16 held-out TREATS triples · 19 Drug candidates.**
+
+| Metric | TransE (legacy 99-node) | RotatE (post-HPO 673-node) | Bootstrap CI |
+|---|---|---|---|
+| MRR (filtered) | 0.131 | _pending_ | _pending_ |
+| Hits@1 | 0.000 | _pending_ | _pending_ |
+| Hits@3 | 0.062 | _pending_ | _pending_ |
+| Hits@10 | 0.562 | _pending_ | _pending_ |
+| Mean rank | 9.88 | _pending_ | _pending_ |
+
+**Why this counts as deep learning.** RotatE is an end-to-end neural
+representation-learning model — trainable embedding layers, Adam,
+self-adversarial sigmoid loss, gradient backprop. The depth of
+knowledge-graph embedding methods lies in the learned feature space,
+not stacked layers (Hamilton, Ying & Leskovec, NeurIPS 2017). The
+in-progress GNN comparison adds R-GCN and CompGCN (PyKEEN) for an
+explicit message-passing baseline.
+
+### Diagnostic sanity-check on hand-picked LSD profiles
 
 | Input symptoms | Top-1 predicted | Correct? |
 |---|---|---|
@@ -268,8 +279,7 @@ the Hetionet baseline for comparison.
 | hepatomegaly + splenomegaly + VSGP + ataxia + seizures + devdelay | **Niemann-Pick C** | ✅ |
 | cherry-red spot + hypotonia + devdelay + seizures | **Tay-Sachs** | ✅ |
 
-Pinned as integration-test assertions in `tests/integration/test_diagnose_router.py`
-and as smoke checks in `tests/e2e/smoke.py`.
+Pinned as smoke-style assertions in `tests/regression/test_backend.py`.
 
 ---
 
@@ -279,8 +289,9 @@ All scores exposed by the API carry `description=` in the OpenAPI schema.  Summa
 
 **Repurposing (`/repurpose`)**
 
-- `model_score` — TransE: `-||h + r - t||₂`. Higher is better. Not comparable
-  across retrains (embedding space is rotation-free).
+- `model_score` — RotatE: `−‖h ∘ r − t‖₂` in complex space, where `r = e^(iθ)`.
+  Higher is better. Not comparable across retrains (the embedding space has
+  global phase symmetry).
 - `graph_score` — Jaccard overlap between the drug's pathway neighborhood
   (`drug → TARGETS → protein → PARTICIPATES_IN → pathway`) and the disease's
   neighborhood (`disease → CAUSES → gene → ENCODES → protein → PARTICIPATES_IN →
@@ -304,55 +315,48 @@ All scores exposed by the API carry `description=` in the OpenAPI schema.  Summa
 
 ## Testing
 
-```
-pytest tests/regression tests/integration   # 88 tests
-python run.py smoke                          # 17 smoke checks
+```bash
+pytest tests/regression tests/unit -q       # ~30 s
+python run.py smoke                          # end-to-end demo flow checks
 ```
 
-| Suite | Location | Count | What it covers |
-|---|---|---|---|
-| Regression | `tests/regression/test_backend.py` | 23 | One pin per named defect (C1-C5, H1-H7, M1-M4) |
-| Integration | `tests/integration/` | 65 | Full HTTP surface, schema, error cases, dual-mount |
-| E2E smoke | `tests/e2e/smoke.py` | 17 | Real-data ranking pins (Tay-Sachs, Fabry, NPC) |
-
-**Backend-parity testing (Step 6):** the integration tests are backend-agnostic.
-Run `KG_BACKEND=neo4j pytest tests/integration` after Phase 1 ingest to verify
-the Neo4j backend produces identical API responses.
+| Suite | Location | What it covers |
+|---|---|---|
+| Regression | `tests/regression/test_backend.py` | One pin per named defect that's been fixed in production |
+| Unit | `tests/unit/` | Pure-logic tests: KG loader, repurpose service ranking math, RotatE inference shape |
+| E2E smoke | `tests/e2e/smoke.py` | Real-data ranking pins (Tay-Sachs, Fabry, NPC top-1 hits) |
 
 ---
 
-## Phase progress
+## Roadmap
 
-| Phase | Status | Key deliverable |
-|---|---|---|
-| Pre-Phase-1 refactor | ✅ **done** | `app/` layout, `create_app()`, `lifespan`, DI aliases, Ruff, 88-test suite |
-| Docker scaffolding | ✅ **done** | `compose.yml`, `Dockerfile.backend`, `init.cypher` |
-| Phase 1 — ingestor code | ✅ **done** | PrimeKG · DrugCentral · HPO · Orphanet · Reactome · `fetch_all.py` |
-| Phase 1 — KG backend | ✅ **done** | `KGBackend` Protocol · `Neo4jBackend` · `lifespan` wired |
-| Phase 1 — data ingest | 🔲 pending user | `docker compose up -d neo4j` → `python -m app.etl.fetch_all` → `python -m app.etl.ingest.all` |
-| Phase 1 — Neo4j live | 🔲 pending data | `KG_BACKEND=neo4j` + re-run 88+17 suite |
-| Phase 2 — PyKEEN + CompGCN | 🔲 future | After Phase 1 verification |
-| Phase 3 — Cypher evidence paths | 🔲 future | Replace in-memory DFS in `Neo4jBackend` |
-| Phase 4 — FAISS + Resnik diagnosis | 🔲 future | Second scorer in `DiagnoseService` |
-| Phase 5 — NER enrichment | 🔲 optional | `app/ner/` domain |
-| Phase 6 — React frontend | 🔲 future | Replace `frontend/index.html` |
+| Milestone | Status |
+|---|---|
+| Curated 99-node LSD seed KG | ✅ shipped |
+| RotatE in PyTorch + NumPy inference | ✅ shipped |
+| Leave-one-out filtered eval + bootstrap-95% CIs | ✅ shipped |
+| FastAPI + Pydantic v2 backend | ✅ shipped |
+| React/Vite frontend with code-split bundles | ✅ shipped |
+| HPO HPOA expansion (894 HAS_PHENOTYPE edges) | ✅ shipped |
+| GNN comparison study (R-GCN + CompGCN via PyKEEN) | 🟡 in progress |
+| Multi-stage Docker image + Fly.io deploy | 🟡 in progress |
+| GitHub Actions CI (lint + test + image build) | ✅ wired |
+| Time-split eval on `approval_year` (PyKEEN pipeline) | 🔲 future |
 
 ---
 
 ## Configuration
 
-All settings are in `app/core/config.py` as a `pydantic-settings` `Settings`
-class that reads from `.env`.  Copy `.env.example` to `.env` and edit before
-running the Phase 1 stack.
+All settings live in `app/core/config.py` as a `pydantic-settings` `Settings`
+class that reads from `.env`. Copy `.env.example` to `.env` and edit.
 
 Key variables:
 
 | Variable | Default | Notes |
 |---|---|---|
-| `KG_BACKEND` | `networkx` | `neo4j` after Phase 1 ingest |
-| `NEO4J_URI` | `bolt://localhost:7687` | Bolt URL |
-| `NEO4J_PASSWORD` | `changethis_dev_only` | **Must change** before production |
-| `DATAVERSE_API_TOKEN` | _(empty)_ | Required for PrimeKG download from Harvard Dataverse |
+| `ENVIRONMENT` | `local` | `local` enables `/docs`; anything else hides it |
+| `KG_BACKEND` | `networkx` | Single in-process backend |
+| `SEED_KG_PATH` | `data/seed/kg.json` | Switch to `kg-mvp.json` for the original 99-node baseline |
 | `DISEASE_SCOPE` | `lsd` | `lsd` · `lsd_extended` · `all` |
 | `LOG_LEVEL` | `INFO` | `DEBUG` · `INFO` · `WARNING` · `ERROR` |
 
@@ -361,20 +365,7 @@ Key variables:
 ## Development
 
 ```bash
-# Install with dev extras
 pip install -e ".[dev]"
-
-# Lint + format (Ruff)
-bash scripts/lint.sh
-# or:
 ruff check app tests --fix && ruff format app tests
-
-# Dev convenience (serves + watches)
-bash scripts/dev.sh serve
-```
-
-Pre-commit hook (optional):
-
-```bash
-pre-commit install
+pytest tests/regression tests/unit -q
 ```

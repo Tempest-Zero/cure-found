@@ -112,9 +112,7 @@ def main() -> None:
 
         # 9. subgraph around NPC
         sg = c.get("/subgraph?node_id=D:NPC&k=2&max_nodes=40").json()
-        assert_true(
-            "subgraph NPC >= 10 nodes", len(sg["nodes"]) >= 10, f"got {len(sg['nodes'])}"
-        )
+        assert_true("subgraph NPC >= 10 nodes", len(sg["nodes"]) >= 10, f"got {len(sg['nodes'])}")
         assert_true("subgraph NPC has edges", len(sg["edges"]) >= 5)
 
         # 10. frontend is served

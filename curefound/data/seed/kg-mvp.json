@@ -1,0 +1,2005 @@
+{
+  "version": "kg-mvp-0.1+sha.227c0192deca",
+  "generated_by": "etl/build_seed_kg.py",
+  "nodes": [
+    {
+      "id": "D:GAUCHER",
+      "name": "Gaucher disease",
+      "xrefs": {
+        "mondo_id": "MONDO:0018150",
+        "omim_id": "230800",
+        "orpha_id": "355"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:FABRY",
+      "name": "Fabry disease",
+      "xrefs": {
+        "mondo_id": "MONDO:0018149",
+        "omim_id": "301500",
+        "orpha_id": "324"
+      },
+      "is_rare": true,
+      "inheritance": "XL",
+      "type": "Disease"
+    },
+    {
+      "id": "D:NPA",
+      "name": "Niemann-Pick disease type A",
+      "xrefs": {
+        "mondo_id": "MONDO:0009756",
+        "omim_id": "257200",
+        "orpha_id": "77292"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:NPB",
+      "name": "Niemann-Pick disease type B",
+      "xrefs": {
+        "mondo_id": "MONDO:0009757",
+        "omim_id": "607616",
+        "orpha_id": "77293"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:NPC",
+      "name": "Niemann-Pick disease type C",
+      "xrefs": {
+        "mondo_id": "MONDO:0009937",
+        "omim_id": "257220",
+        "orpha_id": "646"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:POMPE",
+      "name": "Pompe disease",
+      "xrefs": {
+        "mondo_id": "MONDO:0009290",
+        "omim_id": "232300",
+        "orpha_id": "365"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:TAYSACHS",
+      "name": "Tay-Sachs disease",
+      "xrefs": {
+        "mondo_id": "MONDO:0010231",
+        "omim_id": "272800",
+        "orpha_id": "845"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:KRABBE",
+      "name": "Krabbe disease",
+      "xrefs": {
+        "mondo_id": "MONDO:0009499",
+        "omim_id": "245200",
+        "orpha_id": "487"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:MPS1",
+      "name": "Mucopolysaccharidosis type I",
+      "xrefs": {
+        "mondo_id": "MONDO:0001586",
+        "omim_id": "607014",
+        "orpha_id": "579"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:MPS2",
+      "name": "Mucopolysaccharidosis type II",
+      "xrefs": {
+        "mondo_id": "MONDO:0010674",
+        "omim_id": "309900",
+        "orpha_id": "580"
+      },
+      "is_rare": true,
+      "inheritance": "XL",
+      "type": "Disease"
+    },
+    {
+      "id": "D:MLD",
+      "name": "Metachromatic leukodystrophy",
+      "xrefs": {
+        "mondo_id": "MONDO:0018868",
+        "omim_id": "250100",
+        "orpha_id": "512"
+      },
+      "is_rare": true,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:CF",
+      "name": "Cystic fibrosis",
+      "xrefs": {
+        "mondo_id": "MONDO:0009061",
+        "omim_id": "219700"
+      },
+      "is_rare": false,
+      "inheritance": "AR",
+      "type": "Disease"
+    },
+    {
+      "id": "D:HD",
+      "name": "Huntington disease",
+      "xrefs": {
+        "mondo_id": "MONDO:0007739",
+        "omim_id": "143100"
+      },
+      "is_rare": true,
+      "inheritance": "AD",
+      "type": "Disease"
+    },
+    {
+      "id": "G:GBA",
+      "name": "GBA",
+      "xrefs": {
+        "hgnc_id": "HGNC:4177",
+        "ncbi_gene_id": "2629"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:GLA",
+      "name": "GLA",
+      "xrefs": {
+        "hgnc_id": "HGNC:4296",
+        "ncbi_gene_id": "2717"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:SMPD1",
+      "name": "SMPD1",
+      "xrefs": {
+        "hgnc_id": "HGNC:11120",
+        "ncbi_gene_id": "6609"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:NPC1",
+      "name": "NPC1",
+      "xrefs": {
+        "hgnc_id": "HGNC:7897",
+        "ncbi_gene_id": "4864"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:NPC2",
+      "name": "NPC2",
+      "xrefs": {
+        "hgnc_id": "HGNC:14537",
+        "ncbi_gene_id": "10577"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:GAA",
+      "name": "GAA",
+      "xrefs": {
+        "hgnc_id": "HGNC:4065",
+        "ncbi_gene_id": "2548"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:HEXA",
+      "name": "HEXA",
+      "xrefs": {
+        "hgnc_id": "HGNC:4878",
+        "ncbi_gene_id": "3073"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:GALC",
+      "name": "GALC",
+      "xrefs": {
+        "hgnc_id": "HGNC:4115",
+        "ncbi_gene_id": "2581"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:IDUA",
+      "name": "IDUA",
+      "xrefs": {
+        "hgnc_id": "HGNC:5391",
+        "ncbi_gene_id": "3425"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:IDS",
+      "name": "IDS",
+      "xrefs": {
+        "hgnc_id": "HGNC:5389",
+        "ncbi_gene_id": "3423"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:ARSA",
+      "name": "ARSA",
+      "xrefs": {
+        "hgnc_id": "HGNC:728",
+        "ncbi_gene_id": "410"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:CFTR",
+      "name": "CFTR",
+      "xrefs": {
+        "hgnc_id": "HGNC:1884",
+        "ncbi_gene_id": "1080"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "G:HTT",
+      "name": "HTT",
+      "xrefs": {
+        "hgnc_id": "HGNC:4851",
+        "ncbi_gene_id": "3064"
+      },
+      "type": "Gene"
+    },
+    {
+      "id": "P:GBA",
+      "name": "Beta-glucocerebrosidase",
+      "xrefs": {
+        "uniprot_id": "P04062"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:GLA",
+      "name": "Alpha-galactosidase A",
+      "xrefs": {
+        "uniprot_id": "P06280"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:SMPD1",
+      "name": "Acid sphingomyelinase",
+      "xrefs": {
+        "uniprot_id": "P17405"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:NPC1",
+      "name": "NPC intracellular cholesterol transporter 1",
+      "xrefs": {
+        "uniprot_id": "O15118"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:NPC2",
+      "name": "NPC intracellular cholesterol transporter 2",
+      "xrefs": {
+        "uniprot_id": "P61916"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:GAA",
+      "name": "Acid alpha-glucosidase",
+      "xrefs": {
+        "uniprot_id": "P10253"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:HEXA",
+      "name": "Beta-hexosaminidase subunit alpha",
+      "xrefs": {
+        "uniprot_id": "P06865"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:GALC",
+      "name": "Galactocerebrosidase",
+      "xrefs": {
+        "uniprot_id": "P54803"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:IDUA",
+      "name": "Alpha-L-iduronidase",
+      "xrefs": {
+        "uniprot_id": "P35475"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:IDS",
+      "name": "Iduronate 2-sulfatase",
+      "xrefs": {
+        "uniprot_id": "P22304"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:ARSA",
+      "name": "Arylsulfatase A",
+      "xrefs": {
+        "uniprot_id": "P15289"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:CFTR",
+      "name": "Cystic fibrosis transmembrane conductance regulator",
+      "xrefs": {
+        "uniprot_id": "P13569"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:HTT",
+      "name": "Huntingtin",
+      "xrefs": {
+        "uniprot_id": "P42858"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:HDAC1",
+      "name": "Histone deacetylase 1",
+      "xrefs": {
+        "uniprot_id": "Q13547"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:MTOR",
+      "name": "Serine/threonine-protein kinase mTOR",
+      "xrefs": {
+        "uniprot_id": "P42345"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "P:HSP70",
+      "name": "Heat shock 70 kDa protein 1A",
+      "xrefs": {
+        "uniprot_id": "P0DMV8"
+      },
+      "type": "Protein"
+    },
+    {
+      "id": "DR:IMIGLUCERASE",
+      "name": "Imiglucerase",
+      "xrefs": {
+        "drugcentral_id": "1423"
+      },
+      "approval_year": 1994,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:VELAGLUCERASE",
+      "name": "Velaglucerase alfa",
+      "xrefs": {
+        "drugcentral_id": "4723"
+      },
+      "approval_year": 2010,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:TALIGLUCERASE",
+      "name": "Taliglucerase alfa",
+      "xrefs": {
+        "drugcentral_id": "4829"
+      },
+      "approval_year": 2012,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:MIGLUSTAT",
+      "name": "Miglustat",
+      "xrefs": {
+        "drugcentral_id": "1803"
+      },
+      "approval_year": 2003,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:ELIGLUSTAT",
+      "name": "Eliglustat",
+      "xrefs": {
+        "drugcentral_id": "4999"
+      },
+      "approval_year": 2014,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:AGALSIDASE_A",
+      "name": "Agalsidase alfa",
+      "xrefs": {
+        "drugcentral_id": "4268"
+      },
+      "approval_year": 2001,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:AGALSIDASE_B",
+      "name": "Agalsidase beta",
+      "xrefs": {
+        "drugcentral_id": "4267"
+      },
+      "approval_year": 2003,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:MIGALASTAT",
+      "name": "Migalastat",
+      "xrefs": {
+        "drugcentral_id": "5158"
+      },
+      "approval_year": 2018,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:ALGLUCOSIDASE",
+      "name": "Alglucosidase alfa",
+      "xrefs": {
+        "drugcentral_id": "4266"
+      },
+      "approval_year": 2006,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:LARONIDASE",
+      "name": "Laronidase",
+      "xrefs": {
+        "drugcentral_id": "4269"
+      },
+      "approval_year": 2003,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:IDURSULFASE",
+      "name": "Idursulfase",
+      "xrefs": {
+        "drugcentral_id": "4270"
+      },
+      "approval_year": 2006,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:ARIMOCLOMOL",
+      "name": "Arimoclomol",
+      "xrefs": {
+        "drugcentral_id": "5492"
+      },
+      "approval_year": 2023,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:HPBCD",
+      "name": "2-hydroxypropyl-beta-cyclodextrin",
+      "xrefs": {
+        "drugcentral_id": "3094"
+      },
+      "approval_year": null,
+      "is_approved": false,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:VORINOSTAT",
+      "name": "Vorinostat",
+      "xrefs": {
+        "drugcentral_id": "4383"
+      },
+      "approval_year": 2006,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:RAPAMYCIN",
+      "name": "Sirolimus (rapamycin)",
+      "xrefs": {
+        "drugcentral_id": "2438"
+      },
+      "approval_year": 1999,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:AMBROXOL",
+      "name": "Ambroxol",
+      "xrefs": {
+        "drugcentral_id": "74"
+      },
+      "approval_year": 1979,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:NAL",
+      "name": "N-acetyl-L-leucine",
+      "xrefs": {
+        "drugcentral_id": null
+      },
+      "approval_year": 2024,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:IVACAFTOR",
+      "name": "Ivacaftor",
+      "xrefs": {
+        "drugcentral_id": "4835"
+      },
+      "approval_year": 2012,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "DR:TETRABENAZINE",
+      "name": "Tetrabenazine",
+      "xrefs": {
+        "drugcentral_id": "2627"
+      },
+      "approval_year": 2008,
+      "is_approved": true,
+      "type": "Drug"
+    },
+    {
+      "id": "PW:LYSO",
+      "name": "Lysosomal degradation",
+      "xrefs": {
+        "reactome_id": "R-HSA-1632852"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:SPHINGO",
+      "name": "Sphingolipid metabolism",
+      "xrefs": {
+        "reactome_id": "R-HSA-428157"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:GSL_BIOSYN",
+      "name": "Glycosphingolipid biosynthesis",
+      "xrefs": {
+        "reactome_id": "R-HSA-9840310"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:GSL_DEG",
+      "name": "Glycosphingolipid degradation",
+      "xrefs": {
+        "reactome_id": "R-HSA-1663150"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:AUTOPHAGY",
+      "name": "Autophagy",
+      "xrefs": {
+        "reactome_id": "R-HSA-9612973"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:GLYCOGEN",
+      "name": "Glycogen metabolism",
+      "xrefs": {
+        "reactome_id": "R-HSA-8982491"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:CHOLESTEROL",
+      "name": "Cholesterol transport",
+      "xrefs": {
+        "reactome_id": "R-HSA-8957322"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:GAG_DEG",
+      "name": "Glycosaminoglycan degradation",
+      "xrefs": {
+        "reactome_id": "R-HSA-2024096"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:APOPTOSIS",
+      "name": "Apoptosis",
+      "xrefs": {
+        "reactome_id": "R-HSA-109581"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:MTOR",
+      "name": "mTOR signaling",
+      "xrefs": {
+        "reactome_id": "R-HSA-165159"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:HSR",
+      "name": "Heat shock response",
+      "xrefs": {
+        "reactome_id": "R-HSA-3371556"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "PW:UPR",
+      "name": "Unfolded protein response",
+      "xrefs": {
+        "reactome_id": "R-HSA-381119"
+      },
+      "type": "Pathway"
+    },
+    {
+      "id": "S:HEPATOMEGALY",
+      "name": "Hepatomegaly",
+      "xrefs": {
+        "hpo_id": "HP:0002240"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:SPLENOMEGALY",
+      "name": "Splenomegaly",
+      "xrefs": {
+        "hpo_id": "HP:0001744"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:SEIZURES",
+      "name": "Seizures",
+      "xrefs": {
+        "hpo_id": "HP:0001250"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:DEVDELAY",
+      "name": "Global developmental delay",
+      "xrefs": {
+        "hpo_id": "HP:0001263"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:CHERRYRED",
+      "name": "Macular cherry-red spot",
+      "xrefs": {
+        "hpo_id": "HP:0010729"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:BONEPAIN",
+      "name": "Bone pain",
+      "xrefs": {
+        "hpo_id": "HP:0002653"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:CARDIOMYO",
+      "name": "Cardiomyopathy",
+      "xrefs": {
+        "hpo_id": "HP:0001638"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:HEARINGLOSS",
+      "name": "Hearing impairment",
+      "xrefs": {
+        "hpo_id": "HP:0000365"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:VSGP",
+      "name": "Vertical supranuclear gaze palsy",
+      "xrefs": {
+        "hpo_id": "HP:0000605"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:HYPOTONIA",
+      "name": "Hypotonia",
+      "xrefs": {
+        "hpo_id": "HP:0001252"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:COARSEFACE",
+      "name": "Coarse facial features",
+      "xrefs": {
+        "hpo_id": "HP:0000280"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:CORNEACLOUD",
+      "name": "Corneal opacity",
+      "xrefs": {
+        "hpo_id": "HP:0007957"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:SKELETAL",
+      "name": "Skeletal dysplasia",
+      "xrefs": {
+        "hpo_id": "HP:0002652"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:RENAL",
+      "name": "Abnormality of the kidney",
+      "xrefs": {
+        "hpo_id": "HP:0000077"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:NEUROPATHY",
+      "name": "Peripheral neuropathy",
+      "xrefs": {
+        "hpo_id": "HP:0009830"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:ANGIOKERATOMA",
+      "name": "Angiokeratoma",
+      "xrefs": {
+        "hpo_id": "HP:0001073"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:ATAXIA",
+      "name": "Ataxia",
+      "xrefs": {
+        "hpo_id": "HP:0001251"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:DYSTONIA",
+      "name": "Dystonia",
+      "xrefs": {
+        "hpo_id": "HP:0001332"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:DYSPHAGIA",
+      "name": "Dysphagia",
+      "xrefs": {
+        "hpo_id": "HP:0002015"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:PULMONARY",
+      "name": "Pulmonary fibrosis",
+      "xrefs": {
+        "hpo_id": "HP:0002206"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:COGNITIVE",
+      "name": "Cognitive impairment",
+      "xrefs": {
+        "hpo_id": "HP:0100543"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:MOTORDECLINE",
+      "name": "Progressive motor deterioration",
+      "xrefs": {
+        "hpo_id": "HP:0002344"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:ANEMIA",
+      "name": "Anemia",
+      "xrefs": {
+        "hpo_id": "HP:0001903"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:THROMBOCYT",
+      "name": "Thrombocytopenia",
+      "xrefs": {
+        "hpo_id": "HP:0001873"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:CHOREA",
+      "name": "Chorea",
+      "xrefs": {
+        "hpo_id": "HP:0002072"
+      },
+      "type": "Symptom"
+    },
+    {
+      "id": "S:PSYCHIATRIC",
+      "name": "Psychiatric symptoms",
+      "xrefs": {
+        "hpo_id": "HP:0000708"
+      },
+      "type": "Symptom"
+    }
+  ],
+  "edges": [
+    {
+      "head": "G:GBA",
+      "rel": "ENCODES",
+      "tail": "P:GBA",
+      "source": "seed"
+    },
+    {
+      "head": "G:GLA",
+      "rel": "ENCODES",
+      "tail": "P:GLA",
+      "source": "seed"
+    },
+    {
+      "head": "G:SMPD1",
+      "rel": "ENCODES",
+      "tail": "P:SMPD1",
+      "source": "seed"
+    },
+    {
+      "head": "G:NPC1",
+      "rel": "ENCODES",
+      "tail": "P:NPC1",
+      "source": "seed"
+    },
+    {
+      "head": "G:NPC2",
+      "rel": "ENCODES",
+      "tail": "P:NPC2",
+      "source": "seed"
+    },
+    {
+      "head": "G:GAA",
+      "rel": "ENCODES",
+      "tail": "P:GAA",
+      "source": "seed"
+    },
+    {
+      "head": "G:HEXA",
+      "rel": "ENCODES",
+      "tail": "P:HEXA",
+      "source": "seed"
+    },
+    {
+      "head": "G:GALC",
+      "rel": "ENCODES",
+      "tail": "P:GALC",
+      "source": "seed"
+    },
+    {
+      "head": "G:IDUA",
+      "rel": "ENCODES",
+      "tail": "P:IDUA",
+      "source": "seed"
+    },
+    {
+      "head": "G:IDS",
+      "rel": "ENCODES",
+      "tail": "P:IDS",
+      "source": "seed"
+    },
+    {
+      "head": "G:ARSA",
+      "rel": "ENCODES",
+      "tail": "P:ARSA",
+      "source": "seed"
+    },
+    {
+      "head": "G:CFTR",
+      "rel": "ENCODES",
+      "tail": "P:CFTR",
+      "source": "seed"
+    },
+    {
+      "head": "G:HTT",
+      "rel": "ENCODES",
+      "tail": "P:HTT",
+      "source": "seed"
+    },
+    {
+      "head": "G:GBA",
+      "rel": "CAUSES",
+      "tail": "D:GAUCHER",
+      "source": "seed"
+    },
+    {
+      "head": "G:GLA",
+      "rel": "CAUSES",
+      "tail": "D:FABRY",
+      "source": "seed"
+    },
+    {
+      "head": "G:SMPD1",
+      "rel": "CAUSES",
+      "tail": "D:NPA",
+      "source": "seed"
+    },
+    {
+      "head": "G:SMPD1",
+      "rel": "CAUSES",
+      "tail": "D:NPB",
+      "source": "seed"
+    },
+    {
+      "head": "G:NPC1",
+      "rel": "CAUSES",
+      "tail": "D:NPC",
+      "source": "seed"
+    },
+    {
+      "head": "G:NPC2",
+      "rel": "CAUSES",
+      "tail": "D:NPC",
+      "source": "seed"
+    },
+    {
+      "head": "G:GAA",
+      "rel": "CAUSES",
+      "tail": "D:POMPE",
+      "source": "seed"
+    },
+    {
+      "head": "G:HEXA",
+      "rel": "CAUSES",
+      "tail": "D:TAYSACHS",
+      "source": "seed"
+    },
+    {
+      "head": "G:GALC",
+      "rel": "CAUSES",
+      "tail": "D:KRABBE",
+      "source": "seed"
+    },
+    {
+      "head": "G:IDUA",
+      "rel": "CAUSES",
+      "tail": "D:MPS1",
+      "source": "seed"
+    },
+    {
+      "head": "G:IDS",
+      "rel": "CAUSES",
+      "tail": "D:MPS2",
+      "source": "seed"
+    },
+    {
+      "head": "G:ARSA",
+      "rel": "CAUSES",
+      "tail": "D:MLD",
+      "source": "seed"
+    },
+    {
+      "head": "G:CFTR",
+      "rel": "CAUSES",
+      "tail": "D:CF",
+      "source": "seed"
+    },
+    {
+      "head": "G:HTT",
+      "rel": "CAUSES",
+      "tail": "D:HD",
+      "source": "seed"
+    },
+    {
+      "head": "G:NPC1",
+      "rel": "ASSOCIATED_WITH",
+      "tail": "D:NPB",
+      "source": "seed",
+      "score": 0.3
+    },
+    {
+      "head": "G:GBA",
+      "rel": "ASSOCIATED_WITH",
+      "tail": "D:HD",
+      "source": "seed",
+      "score": 0.2
+    },
+    {
+      "head": "P:GBA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GLA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:SMPD1",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:HEXA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GALC",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:IDUA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:IDS",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:ARSA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:NPC1",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:NPC2",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GAA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:LYSO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GBA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:SPHINGO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GBA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GSL_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:GLA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:SPHINGO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GLA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GSL_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:SMPD1",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:SPHINGO",
+      "source": "seed"
+    },
+    {
+      "head": "P:SMPD1",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GSL_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:HEXA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:SPHINGO",
+      "source": "seed"
+    },
+    {
+      "head": "P:HEXA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GSL_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:GALC",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:SPHINGO",
+      "source": "seed"
+    },
+    {
+      "head": "P:GALC",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GSL_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:NPC1",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:CHOLESTEROL",
+      "source": "seed"
+    },
+    {
+      "head": "P:NPC2",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:CHOLESTEROL",
+      "source": "seed"
+    },
+    {
+      "head": "P:GAA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GLYCOGEN",
+      "source": "seed"
+    },
+    {
+      "head": "P:IDUA",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GAG_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:IDS",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:GAG_DEG",
+      "source": "seed"
+    },
+    {
+      "head": "P:MTOR",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:AUTOPHAGY",
+      "source": "seed"
+    },
+    {
+      "head": "P:MTOR",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:MTOR",
+      "source": "seed"
+    },
+    {
+      "head": "P:HSP70",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:HSR",
+      "source": "seed"
+    },
+    {
+      "head": "P:HSP70",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:UPR",
+      "source": "seed"
+    },
+    {
+      "head": "P:HDAC1",
+      "rel": "PARTICIPATES_IN",
+      "tail": "PW:APOPTOSIS",
+      "source": "seed"
+    },
+    {
+      "head": "DR:IMIGLUCERASE",
+      "rel": "TARGETS",
+      "tail": "P:GBA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:VELAGLUCERASE",
+      "rel": "TARGETS",
+      "tail": "P:GBA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:TALIGLUCERASE",
+      "rel": "TARGETS",
+      "tail": "P:GBA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:AMBROXOL",
+      "rel": "TARGETS",
+      "tail": "P:GBA",
+      "source": "seed",
+      "action": "chaperone"
+    },
+    {
+      "head": "DR:AGALSIDASE_A",
+      "rel": "TARGETS",
+      "tail": "P:GLA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:AGALSIDASE_B",
+      "rel": "TARGETS",
+      "tail": "P:GLA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:MIGALASTAT",
+      "rel": "TARGETS",
+      "tail": "P:GLA",
+      "source": "seed",
+      "action": "chaperone"
+    },
+    {
+      "head": "DR:ALGLUCOSIDASE",
+      "rel": "TARGETS",
+      "tail": "P:GAA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:LARONIDASE",
+      "rel": "TARGETS",
+      "tail": "P:IDUA",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:IDURSULFASE",
+      "rel": "TARGETS",
+      "tail": "P:IDS",
+      "source": "seed",
+      "action": "replaces"
+    },
+    {
+      "head": "DR:MIGLUSTAT",
+      "rel": "TARGETS",
+      "tail": "P:GBA",
+      "source": "seed",
+      "action": "substrate_reduction"
+    },
+    {
+      "head": "DR:ELIGLUSTAT",
+      "rel": "TARGETS",
+      "tail": "P:GBA",
+      "source": "seed",
+      "action": "substrate_reduction"
+    },
+    {
+      "head": "DR:HPBCD",
+      "rel": "TARGETS",
+      "tail": "P:NPC1",
+      "source": "seed",
+      "action": "cholesterol_shuttle"
+    },
+    {
+      "head": "DR:ARIMOCLOMOL",
+      "rel": "TARGETS",
+      "tail": "P:HSP70",
+      "source": "seed",
+      "action": "coinduces"
+    },
+    {
+      "head": "DR:NAL",
+      "rel": "TARGETS",
+      "tail": "P:NPC1",
+      "source": "seed",
+      "action": "lysosomal_modulator"
+    },
+    {
+      "head": "DR:VORINOSTAT",
+      "rel": "TARGETS",
+      "tail": "P:HDAC1",
+      "source": "seed",
+      "action": "inhibits"
+    },
+    {
+      "head": "DR:RAPAMYCIN",
+      "rel": "TARGETS",
+      "tail": "P:MTOR",
+      "source": "seed",
+      "action": "inhibits"
+    },
+    {
+      "head": "DR:IVACAFTOR",
+      "rel": "TARGETS",
+      "tail": "P:CFTR",
+      "source": "seed",
+      "action": "potentiator"
+    },
+    {
+      "head": "DR:TETRABENAZINE",
+      "rel": "TARGETS",
+      "tail": "P:HTT",
+      "source": "seed",
+      "action": "indirect"
+    },
+    {
+      "head": "DR:IMIGLUCERASE",
+      "rel": "TREATS",
+      "tail": "D:GAUCHER",
+      "source": "seed",
+      "approval_year": 1994
+    },
+    {
+      "head": "DR:VELAGLUCERASE",
+      "rel": "TREATS",
+      "tail": "D:GAUCHER",
+      "source": "seed",
+      "approval_year": 2010
+    },
+    {
+      "head": "DR:TALIGLUCERASE",
+      "rel": "TREATS",
+      "tail": "D:GAUCHER",
+      "source": "seed",
+      "approval_year": 2012
+    },
+    {
+      "head": "DR:MIGLUSTAT",
+      "rel": "TREATS",
+      "tail": "D:GAUCHER",
+      "source": "seed",
+      "approval_year": 2003
+    },
+    {
+      "head": "DR:ELIGLUSTAT",
+      "rel": "TREATS",
+      "tail": "D:GAUCHER",
+      "source": "seed",
+      "approval_year": 2014
+    },
+    {
+      "head": "DR:MIGLUSTAT",
+      "rel": "TREATS",
+      "tail": "D:NPC",
+      "source": "seed",
+      "approval_year": 2009
+    },
+    {
+      "head": "DR:ARIMOCLOMOL",
+      "rel": "TREATS",
+      "tail": "D:NPC",
+      "source": "seed",
+      "approval_year": 2023
+    },
+    {
+      "head": "DR:NAL",
+      "rel": "TREATS",
+      "tail": "D:NPC",
+      "source": "seed",
+      "approval_year": 2024
+    },
+    {
+      "head": "DR:AGALSIDASE_A",
+      "rel": "TREATS",
+      "tail": "D:FABRY",
+      "source": "seed",
+      "approval_year": 2001
+    },
+    {
+      "head": "DR:AGALSIDASE_B",
+      "rel": "TREATS",
+      "tail": "D:FABRY",
+      "source": "seed",
+      "approval_year": 2003
+    },
+    {
+      "head": "DR:MIGALASTAT",
+      "rel": "TREATS",
+      "tail": "D:FABRY",
+      "source": "seed",
+      "approval_year": 2018
+    },
+    {
+      "head": "DR:ALGLUCOSIDASE",
+      "rel": "TREATS",
+      "tail": "D:POMPE",
+      "source": "seed",
+      "approval_year": 2006
+    },
+    {
+      "head": "DR:LARONIDASE",
+      "rel": "TREATS",
+      "tail": "D:MPS1",
+      "source": "seed",
+      "approval_year": 2003
+    },
+    {
+      "head": "DR:IDURSULFASE",
+      "rel": "TREATS",
+      "tail": "D:MPS2",
+      "source": "seed",
+      "approval_year": 2006
+    },
+    {
+      "head": "DR:IVACAFTOR",
+      "rel": "TREATS",
+      "tail": "D:CF",
+      "source": "seed",
+      "approval_year": 2012
+    },
+    {
+      "head": "DR:TETRABENAZINE",
+      "rel": "TREATS",
+      "tail": "D:HD",
+      "source": "seed",
+      "approval_year": 2008
+    },
+    {
+      "head": "D:GAUCHER",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEPATOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:GAUCHER",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SPLENOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:GAUCHER",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:BONEPAIN",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:GAUCHER",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:ANEMIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:GAUCHER",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:THROMBOCYT",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:FABRY",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:ANGIOKERATOMA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:FABRY",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:RENAL",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:FABRY",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:NEUROPATHY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:FABRY",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CARDIOMYO",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:FABRY",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEARINGLOSS",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:FABRY",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CORNEACLOUD",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPA",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEPATOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPA",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SPLENOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPA",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DEVDELAY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPA",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CHERRYRED",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPA",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HYPOTONIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPA",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPB",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEPATOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPB",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SPLENOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPB",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:PULMONARY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPB",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:THROMBOCYT",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEPATOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SPLENOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:VSGP",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:ATAXIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DYSTONIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DYSPHAGIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SEIZURES",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:COGNITIVE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:NPC",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:POMPE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CARDIOMYO",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:POMPE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HYPOTONIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:POMPE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:POMPE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEARINGLOSS",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:TAYSACHS",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DEVDELAY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:TAYSACHS",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CHERRYRED",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:TAYSACHS",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SEIZURES",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:TAYSACHS",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HYPOTONIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:TAYSACHS",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:TAYSACHS",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEARINGLOSS",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:KRABBE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DEVDELAY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:KRABBE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HYPOTONIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:KRABBE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SEIZURES",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:KRABBE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:KRABBE",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:NEUROPATHY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS1",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:COARSEFACE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS1",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CORNEACLOUD",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS1",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SKELETAL",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS1",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEARINGLOSS",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS1",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DEVDELAY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS1",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEPATOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS2",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:COARSEFACE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS2",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SKELETAL",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS2",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEARINGLOSS",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS2",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:HEPATOMEGALY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MPS2",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DEVDELAY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MLD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MLD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DEVDELAY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MLD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:NEUROPATHY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MLD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:SEIZURES",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:MLD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:COGNITIVE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:CF",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:PULMONARY",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:CF",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:COGNITIVE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:HD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:CHOREA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:HD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:DYSTONIA",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:HD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:PSYCHIATRIC",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:HD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:COGNITIVE",
+      "source": "seed",
+      "frequency": "frequent"
+    },
+    {
+      "head": "D:HD",
+      "rel": "HAS_PHENOTYPE",
+      "tail": "S:MOTORDECLINE",
+      "source": "seed",
+      "frequency": "frequent"
+    }
+  ],
+  "stats": {
+    "n_nodes": 99,
+    "n_edges": 163,
+    "by_node_type": {
+      "Drug": 19,
+      "Pathway": 12,
+      "Symptom": 26,
+      "Protein": 16,
+      "Gene": 13,
+      "Disease": 13
+    },
+    "by_rel_type": {
+      "ENCODES": 13,
+      "ASSOCIATED_WITH": 2,
+      "TARGETS": 19,
+      "TREATS": 16,
+      "PARTICIPATES_IN": 31,
+      "CAUSES": 14,
+      "HAS_PHENOTYPE": 68
+    }
+  }
+}

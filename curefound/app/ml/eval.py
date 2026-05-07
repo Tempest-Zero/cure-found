@@ -1,5 +1,5 @@
 """
-Held-out evaluator for the TransE TREATS predictor.
+Held-out evaluator for the RotatE TREATS predictor.
 
 Why this file exists:
   The previous "performance" numbers in README.md (Hits@1 / MRR / sample rank)
@@ -8,36 +8,37 @@ Why this file exists:
   credibility. This file replaces those numbers with a proper leave-one-out
   evaluation and writes the result to `data/artifacts/eval_report.json`.
 
-Protocol (Bordes-2013 / PyKEEN convention, filtered ranking):
+Protocol (Sun-2019 / PyKEEN convention, filtered ranking):
   For each of the N TREATS triples (h, TREATS, t):
-    1. Retrain TransE on the other N-1 triples (plus every non-TREATS triple),
+    1. Retrain RotatE on the other N-1 triples (plus every non-TREATS triple),
        so the held-out fact is not in the training set.
     2. Score every Drug as a possible head for (TREATS, t).
     3. Remove other *known-true* TREATS heads for the same t from the ranking
        (filtered protocol -- else rare tails with 2-3 approved drugs would
        artificially hurt the score).
     4. Record the rank of the held-out head.
-  Aggregate: filtered MRR, Hits@1, Hits@3, Hits@10.
+  Aggregate: filtered MRR, Hits@1, Hits@3, Hits@10, plus a non-parametric
+  bootstrap-95% CI computed over the per-triple ranks.
 
-This takes ~2 min on the seed (800 epochs * 16 retrains on a tiny NumPy
-graph). In Phase 2 the TransE retrain is replaced by a PyKEEN pipeline
-with a time-split on `approval_year`; everything else in this file is
-reused verbatim.
+In Phase 2 the RotatE retrain is replaced by a PyKEEN pipeline with a
+time-split on `approval_year`; everything else in this file is reused
+verbatim.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 import numpy as np
 
 from app.core.paths import ARTIFACTS_DIR as ARTIFACTS
 from app.kg.loader import KG, load_kg
-from app.ml import transe as transe_mod
-from app.ml.transe import TransEConfig
+from app.ml import rotate as kge_mod
+from app.ml.rotate import RotatEConfig
 
 
 def _treats_triples(kg: KG) -> list[tuple[int, int, int]]:
@@ -65,7 +66,7 @@ def _filtered_rank(
     """Filtered rank of `true_head` among `candidate_heads` for (r, t).
     Other known-true heads for the same tail are excluded from the ranking
     so ties to siblings do not falsely penalize the model."""
-    ranked, _ = transe_mod.rank_heads(E, R, r_idx, t_idx, candidate_heads)
+    ranked, _ = kge_mod.rank_heads(E, R, r_idx, t_idx, candidate_heads)
     rank = 0
     for h in ranked:
         h_int = int(h)
@@ -77,12 +78,61 @@ def _filtered_rank(
     raise RuntimeError("true head not in candidate set")
 
 
+def _bootstrap_ci(
+    ranks: list[int],
+    *,
+    n_resamples: int = 2000,
+    seed: int = 42,
+    alpha: float = 0.05,
+) -> dict:
+    """Non-parametric bootstrap 95% CI on MRR / Hits@K / mean rank.
+
+    With n=16 leave-one-out triples, point estimates have ±0.06 swing per
+    triple (1/16). Bootstrapping makes that uncertainty visible so the
+    evaluation isn't pretending to a precision it doesn't have.
+    """
+    rng = np.random.default_rng(seed)
+    arr = np.asarray(ranks, dtype=np.float64)
+    n = len(arr)
+    if n == 0:
+        return {}
+    metrics = {"mrr": [], "hits_at_1": [], "hits_at_3": [], "hits_at_10": [], "mean_rank": []}
+    for _ in range(n_resamples):
+        idxs = rng.integers(0, n, size=n)
+        sample = arr[idxs]
+        metrics["mrr"].append(float((1.0 / sample).mean()))
+        metrics["hits_at_1"].append(float((sample <= 1).mean()))
+        metrics["hits_at_3"].append(float((sample <= 3).mean()))
+        metrics["hits_at_10"].append(float((sample <= 10).mean()))
+        metrics["mean_rank"].append(float(sample.mean()))
+
+    lo_pct = 100 * (alpha / 2)
+    hi_pct = 100 * (1 - alpha / 2)
+    ci = {}
+    for k, vals in metrics.items():
+        v = np.asarray(vals)
+        ci[k] = {
+            "mean": float(v.mean()),
+            "lo": float(np.percentile(v, lo_pct)),
+            "hi": float(np.percentile(v, hi_pct)),
+            "std": float(v.std(ddof=1)),
+        }
+    ci["_meta"] = {
+        "n_resamples": n_resamples,
+        "alpha": alpha,
+        "n_triples": n,
+        "seed": seed,
+    }
+    return ci
+
+
 def evaluate(
     kg: KG,
-    cfg: TransEConfig | None = None,
+    cfg: RotatEConfig | None = None,
     verbose: bool = True,
+    bootstrap_resamples: int = 2000,
 ) -> dict:
-    cfg = cfg or TransEConfig()
+    cfg = cfg or RotatEConfig()
     treats = _treats_triples(kg)
     n_entities = len(kg.idx_to_entity)
     n_relations = len(kg.idx_to_relation)
@@ -106,7 +156,7 @@ def evaluate(
                 f"{kg.idx_to_entity[h]} -TREATS-> {kg.idx_to_entity[t]}",
                 flush=True,
             )
-        E, R, _ = transe_mod.train(train, n_entities, n_relations, cfg=cfg, verbose=False)
+        E, R, _ = kge_mod.train(train, n_entities, n_relations, cfg=cfg, verbose=False)
         rank = _filtered_rank(
             E,
             R,
@@ -139,9 +189,11 @@ def evaluate(
         "hits_at_10": float((ranks_arr <= 10).mean()),
         "ranks": ranks,
     }
+    ci = _bootstrap_ci(ranks, n_resamples=bootstrap_resamples)
     if verbose:
         print(f"\n  eval done in {time.time() - t0:.1f}s across {len(ranks)} held-out triples")
     return {
+        "model": "RotatE",
         "protocol": (
             "leave-one-out over TREATS triples; filtered rank over all Drug "
             "heads; other known TREATS heads for the same tail excluded."
@@ -149,31 +201,77 @@ def evaluate(
         "kg_version": kg.version,
         "config": asdict(cfg),
         "metrics": metrics,
+        "bootstrap_ci_95": ci,
         "per_item": per_item,
     }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="eval", description="Leave-one-out RotatE eval")
+    p.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="Override RotatEConfig.epochs (default: use cfg default 1000). "
+        "Useful for the larger expanded KG where convergence is faster.",
+    )
+    p.add_argument(
+        "--bootstrap",
+        type=int,
+        default=2000,
+        help="Number of bootstrap resamples for the CI (default 2000).",
+    )
+    p.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        help="Path to write the report (default: data/artifacts/eval_report.json).",
+    )
+    args = p.parse_args(argv)
+
     kg = load_kg()
+    cfg = RotatEConfig()
+    if args.epochs is not None:
+        cfg = replace(cfg, epochs=args.epochs)
+
     print(
-        f"Evaluating TransE (leave-one-out over TREATS) on KG {kg.version} "
+        f"Evaluating RotatE (leave-one-out over TREATS) on KG {kg.version} "
         f"-- {len(kg.idx_to_entity)} entities, {len(kg.triples)} triples"
     )
-    report = evaluate(kg)
+    print(
+        f"Config: epochs={cfg.epochs} dim={cfg.dim} batch={cfg.batch_size} negs={cfg.neg_per_pos}"
+    )
+
+    report = evaluate(kg, cfg=cfg, bootstrap_resamples=args.bootstrap)
+
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    out = ARTIFACTS / "eval_report.json"
+    out = (
+        ARTIFACTS / "eval_report.json"
+        if args.out is None
+        else (ARTIFACTS.parent / args.out).resolve()
+    )
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
     m = report["metrics"]
-    print("\n=== Held-out TransE evaluation ===")
+    ci = report["bootstrap_ci_95"]
+    print("\n=== Held-out RotatE evaluation ===")
     print(f"  Protocol       : {report['protocol']}")
     print(f"  KG version     : {report['kg_version']}")
     print(f"  N held-out     : {m['n_evaluated']}")
     print(f"  N candidates   : {m['n_candidates_per_eval']}")
-    print(f"  Mean rank      : {m['mean_rank']:.2f}")
-    print(f"  MRR (filtered) : {m['mrr']:.3f}")
-    print(f"  Hits@1         : {m['hits_at_1']:.3f}")
-    print(f"  Hits@3         : {m['hits_at_3']:.3f}")
-    print(f"  Hits@10        : {m['hits_at_10']:.3f}")
+    print(
+        f"  Mean rank      : {m['mean_rank']:.2f}  [{ci['mean_rank']['lo']:.2f}, {ci['mean_rank']['hi']:.2f}]"
+    )
+    print(f"  MRR (filtered) : {m['mrr']:.3f}  [{ci['mrr']['lo']:.3f}, {ci['mrr']['hi']:.3f}]")
+    print(
+        f"  Hits@1         : {m['hits_at_1']:.3f}  [{ci['hits_at_1']['lo']:.3f}, {ci['hits_at_1']['hi']:.3f}]"
+    )
+    print(
+        f"  Hits@3         : {m['hits_at_3']:.3f}  [{ci['hits_at_3']['lo']:.3f}, {ci['hits_at_3']['hi']:.3f}]"
+    )
+    print(
+        f"  Hits@10        : {m['hits_at_10']:.3f}  [{ci['hits_at_10']['lo']:.3f}, {ci['hits_at_10']['hi']:.3f}]"
+    )
     print(f"\n  Report written to {out}")
     return 0
 
