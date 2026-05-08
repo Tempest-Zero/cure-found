@@ -431,3 +431,49 @@ pip install -e ".[dev]"
 ruff check app tests --fix && ruff format app tests
 pytest tests/regression tests/unit -q
 ```
+
+---
+
+## Deploying to Fly.io (zero local Docker required)
+
+The `docker/Dockerfile` is multi-stage and Fly's **remote builder** runs the
+build for you, so you don't need Docker Desktop on your machine.
+
+```bash
+# One-time:
+curl -L https://fly.io/install.sh | sh        # or `iwr https://fly.io/install.ps1 -useb | iex` on PowerShell
+fly auth login                                # browser auth
+
+# First deploy: rewrites fly.toml with a unique app slug, then deploys.
+# --remote-only forces the build to happen on Fly's builder (no local docker daemon).
+fly launch --copy-config --no-deploy
+fly deploy --remote-only
+
+# Open the live URL.
+fly open
+fly logs                                      # stream container logs
+```
+
+What the production image ships:
+
+- `app/` (FastAPI backend), `app/ml/rotate.py` + `app/ml/distmult.py`
+  (pure-NumPy inference)
+- `data/seed/kg.json` (673-node HPO-expanded KG)
+- `data/artifacts/rotate.{npz,_meta.json}` (always)
+- `data/artifacts/{rgcn,compgcn}.{npz,_meta.json}` (only if you copied them in
+  before deploying — produced by the Colab notebook)
+- `frontend/dist/` (Vite-built React SPA, mounted at `/ui/`)
+
+What it does **not** ship: PyTorch, PyKEEN, raw data, training scripts. Image
+size stays around 250 MB.
+
+After deploy, verify:
+
+```bash
+curl https://<your-app>.fly.dev/health           # 200 + KG version
+curl https://<your-app>.fly.dev/repurpose/models # {"models": [...]} 
+curl -X POST https://<your-app>.fly.dev/repurpose \
+  -H "Content-Type: application/json" \
+  -d '{"disease_id":"D:NPC","top_k":5}'
+# Visit https://<your-app>.fly.dev/ in a browser for the React UI.
+```
