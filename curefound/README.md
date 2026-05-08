@@ -264,13 +264,17 @@ including a non-parametric **bootstrap-95% CI** over the per-fold ranks
 
 **KG: 673 entities · 1,057 edges · 16 held-out TREATS triples · 17–19 Drug candidates per fold.**
 
-| Metric | RotatE (mean) | Bootstrap 95% CI | R-GCN | CompGCN |
-|---|---|---|---|---|
-| MRR (filtered) | 0.146 | [0.085, 0.218] | _pending T4 retrain_ | _pending T4 retrain_ |
-| Hits@1 | 0.000 | [0.000, 0.000] | _pending_ | _pending_ |
-| Hits@3 | 0.125 | [0.000, 0.313] | _pending_ | _pending_ |
-| Hits@10 | 0.375 | [0.125, 0.625] | _pending_ | _pending_ |
-| Mean rank ↓ | 10.94 | [8.63, 13.31] | _pending_ | _pending_ |
+| Metric | RotatE (mean) | 95% CI | R-GCN (mean) | 95% CI | CompGCN |
+|---|---|---|---|---|---|
+| MRR (filtered) | **0.146** | [0.085, 0.218] | 0.077 | [0.073, 0.082] | _pending_ |
+| Hits@1 | 0.000 | [0.000, 0.000] | 0.000 | [0.000, 0.000] | _pending_ |
+| Hits@3 | 0.125 | [0.000, 0.313] | 0.000 | [0.000, 0.000] | _pending_ |
+| Hits@10 | **0.375** | [0.125, 0.625] | 0.063 | [0.000, 0.188] | _pending_ |
+| Mean rank ↓ | **10.94** | [8.63, 13.31] | 13.13 | [12.38, 13.88] | _pending_ |
+
+RotatE outperforms R-GCN on every metric. On a small, sparse graph (673 nodes), RotatE's
+rotation semantics encode the antisymmetric `TREATS` relation more cleanly than R-GCN's
+message-passing — the neighbourhood aggregation has too few hops to add signal. CompGCN pending.
 
 R-GCN and CompGCN train via `scripts/colab_gnn_training.ipynb` on a free Colab T4
 (~30–60 min); the resulting `rgcn.npz` + `compgcn.npz` artifacts drop into

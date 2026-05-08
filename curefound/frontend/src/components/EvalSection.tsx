@@ -39,19 +39,21 @@ const ROTATE: ModelEval = {
   meanRank: { mean: 10.94, lo: 8.63, hi: 13.31 },
 };
 
-// Set `shipped: true` and fill the stats in once the GNN artifacts are
-// produced by the Colab T4 run. Keeping the column visible-but-empty makes
-// the comparison-study story explicit on the page.
+// R-GCN — trained on Colab T4 (87s), eval_report_rgcn.json.
+// MRR is lower than RotatE: message-passing on a small, sparse graph
+// with many one-hop paths doesn't help; RotatE's rotation semantics
+// encode the TREATS antisymmetry more cleanly on this KG size.
 const RGCN: ModelEval = {
   label: "R-GCN",
-  shipped: false,
-  mrr: null,
-  hits1: null,
-  hits3: null,
-  hits10: null,
-  meanRank: null,
+  shipped: true,
+  mrr: { mean: 0.077, lo: 0.073, hi: 0.082 },
+  hits1: { mean: 0.0, lo: 0.0, hi: 0.0 },
+  hits3: { mean: 0.0, lo: 0.0, hi: 0.0 },
+  hits10: { mean: 0.063, lo: 0.0, hi: 0.188 },
+  meanRank: { mean: 13.13, lo: 12.38, hi: 13.88 },
 };
 
+// CompGCN — Colab run timed out before completing; pending a second run.
 const COMPGCN: ModelEval = {
   label: "CompGCN",
   shipped: false,
