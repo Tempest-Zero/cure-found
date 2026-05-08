@@ -1,6 +1,8 @@
 import { ArrowRight, ExternalLink, Github, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { NumberTicker } from "./components/ui/NumberTicker";
 import { BackgroundBeams, Spotlight } from "./components/aceternity";
 import { RepurposeSection } from "./components/RepurposeSection";
 import { DiagnoseSection } from "./components/DiagnoseSection";
@@ -104,12 +106,35 @@ function LogoMark() {
   );
 }
 
+const statContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
+const statItem = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
+
 function Hero() {
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!heroRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.to(heroRef.current, {
+        scrollTrigger: { trigger: heroRef.current, start: "top top", end: "bottom top", scrub: true },
+        scale: 1.08,
+        opacity: 0.55,
+      });
+    }, heroRef);
+    return () => ctx.revert();
+  }, []);
+
   return (
     <section id="top" className="relative isolate overflow-hidden pb-24 pt-32 sm:pt-40">
       <Spotlight />
       <BackgroundBeams className="opacity-70" />
-      <div className="absolute inset-0 spotlight-mask">
+      <div ref={heroRef} className="absolute inset-0 spotlight-mask">
         <Suspense fallback={null}>
           <HeroKGCanvas />
         </Suspense>
@@ -124,37 +149,42 @@ function Hero() {
         >
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/70 px-3 py-1 font-mono text-[11px] text-[var(--color-fg-2)] backdrop-blur">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-acc)] shadow-[0_0_10px_var(--color-acc)]" />
-            RotatE · 99 nodes · 163 edges · 13 rare diseases
+            RotatE · 673 nodes · 1,057 edges · 13 rare diseases
           </div>
 
-          <h1 className="font-display text-balance text-[44px] font-semibold leading-[1.05] tracking-[-0.02em] sm:text-[68px]">
+          <h1 className="font-display text-balance font-semibold leading-[1.05] tracking-[-0.02em]" style={{ fontSize: 'var(--fs-display)' }}>
             Predict repurposable drugs
             <br />
             for <span className="text-[var(--color-acc)]">rare lysosomal disorders</span>.
           </h1>
 
-          <p className="mx-auto mt-6 max-w-[640px] text-pretty text-[16px] leading-[1.6] text-[var(--color-fg-2)] sm:text-[17px]">
+          <p className="mx-auto mt-6 max-w-[640px] text-pretty leading-[1.6] text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
             CureFound learns complex-valued relational rotations over a curated KG of diseases,
             drugs, proteins, and pathways — then ranks plausible drug candidates with the full
             evidence path attached.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a href="#repurpose" className="group inline-flex items-center gap-2 rounded-md bg-[var(--color-acc)] px-4 py-2.5 text-[14px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)]">
+            <a href="#repurpose" className="lift group inline-flex items-center gap-2 rounded-md bg-[var(--color-acc)] px-4 py-2.5 text-[14px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)]">
               Try the demo
               <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
             </a>
-            <a href="#methods" className="inline-flex items-center gap-2 rounded-md border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/60 px-4 py-2.5 text-[14px] text-[var(--color-fg-1)] backdrop-blur hover:border-[var(--color-fg-4)]">
+            <a href="#methods" className="lift inline-flex items-center gap-2 rounded-md border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/60 px-4 py-2.5 text-[14px] text-[var(--color-fg-1)] backdrop-blur hover:border-[var(--color-fg-4)]">
               Methods <ExternalLink size={13} />
             </a>
           </div>
 
-          <div className="mx-auto mt-10 grid max-w-[760px] grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="MRR"      value="0.380" sub="vs 0.131 TransE" />
-            <Stat label="Hits@1"   value="0.188" sub="first non-zero" />
-            <Stat label="Hits@3"   value="0.375" sub="+506% vs TransE" />
-            <Stat label="Hits@10"  value="0.750" sub="+33% vs TransE" />
-          </div>
+          <motion.div
+            variants={statContainer}
+            initial="hidden"
+            animate="show"
+            className="mx-auto mt-10 grid max-w-[760px] grid-cols-2 gap-3 sm:grid-cols-4"
+          >
+            <motion.div variants={statItem}><Stat label="MRR"      numValue={0.380} sub="vs 0.131 TransE" /></motion.div>
+            <motion.div variants={statItem}><Stat label="Hits@1"   numValue={0.188} sub="first non-zero" /></motion.div>
+            <motion.div variants={statItem}><Stat label="Hits@3"   numValue={0.375} sub="+506% vs TransE" /></motion.div>
+            <motion.div variants={statItem}><Stat label="Hits@10"  numValue={0.750} sub="+33% vs TransE" /></motion.div>
+          </motion.div>
         </motion.div>
 
         <div className="mt-10 flex justify-center">
@@ -170,11 +200,13 @@ function Hero() {
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, numValue, sub }: { label: string; numValue: number; sub?: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-1)]/60 p-3 backdrop-blur">
+    <div className="tilt rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-1)]/60 p-3 backdrop-blur">
       <div className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">{label}</div>
-      <div className="mt-1 font-mono text-[22px] font-medium tabular text-[var(--color-fg-0)]">{value}</div>
+      <div className="mt-1 font-mono text-[22px] font-medium tabular text-[var(--color-fg-0)]">
+        <NumberTicker value={numValue} decimalPlaces={3} />
+      </div>
       {sub && (
         <div className="mt-0.5 font-mono text-[9px] text-[var(--color-fg-3)]">{sub}</div>
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, ChevronRight, FlaskConical, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronRight, FlaskConical, Sparkles } from "lucide-react";
+import { KGPulse } from "./KGPulse";
 import {
   DISEASES,
   ENTITY_COLORS,
@@ -175,9 +176,9 @@ export function RepurposeSection() {
                 <button
                   onClick={() => void run()}
                   disabled={loading}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-acc)] px-3 py-1.5 text-[13px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)] disabled:opacity-60"
+                  className="lift inline-flex items-center gap-1.5 rounded-md bg-[var(--color-acc)] px-3 py-1.5 text-[13px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)] disabled:opacity-60"
                 >
-                  {loading ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
+                  {loading ? <KGPulse size={13} /> : <FlaskConical size={13} />}
                   Predict
                 </button>
               </div>
@@ -229,9 +230,19 @@ export function RepurposeSection() {
                 </li>
               )}
               {loading && visibleCands.length === 0 && (
-                <li className="px-4 py-8 text-center font-mono text-[11px] uppercase tracking-wider text-[var(--color-fg-3)]">
-                  scoring candidates…
-                </li>
+                <>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <li key={i} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="skeleton h-4 w-7" />
+                      <span className="flex-1 space-y-1.5">
+                        <span className="skeleton block h-4 w-36" />
+                        <span className="skeleton block h-3 w-52" />
+                      </span>
+                      <span className="skeleton h-1.5 w-16 rounded-full" />
+                      <span className="skeleton h-4 w-14" />
+                    </li>
+                  ))}
+                </>
               )}
             </ul>
           </div>
@@ -369,7 +380,7 @@ function NodeTile({ id }: { id: string }) {
   const name = meta?.name ?? id;
   return (
     <div
-      className="rounded-lg border bg-[var(--color-bg-2)] px-3 py-2"
+      className="tilt rounded-lg border bg-[var(--color-bg-2)] px-3 py-2"
       style={{
         borderColor:
           "color-mix(in oklab, var(--color-line-2) 70%, " + ENTITY_COLORS[type] + " 30%)",
@@ -443,7 +454,7 @@ function ScoreBar({
     : Math.max(0, Math.min(1, label === "fused" ? value * 30 : value));
 
   return (
-    <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-2)] p-3">
+    <div className="tilt rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-2)] p-3">
       <div className="flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
           {label}
@@ -464,7 +475,7 @@ function ScoreBar({
 
 function RankBox({ rank, graphRank }: { rank: number; graphRank: number }) {
   return (
-    <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-2)] p-3">
+    <div className="tilt rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-2)] p-3">
       <div className="flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
           rank
@@ -507,7 +518,7 @@ function ModelChipGroup({
                 : `${modelLabel(m)} not loaded in this deploy — re-train via scripts/colab_gnn_training.ipynb to enable.`
             }
             className={cn(
-              "rounded-md border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors",
+              "lift rounded-md border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors",
               isActive
                 ? "border-[var(--color-acc)]/60 bg-[var(--color-acc)]/15 text-[var(--color-acc)]"
                 : isAvailable
@@ -527,14 +538,20 @@ function ModelChipGroup({
 /* ---------------------------- Section header ---------------------------- */
 function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
   return (
-    <div className="max-w-[760px]">
-      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-acc)]">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="max-w-[760px]"
+    >
+      <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
         {eyebrow}
       </div>
-      <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)] sm:text-[44px]">
+      <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
         {title}
       </h2>
-      <p className="mt-3 text-pretty text-[15px] text-[var(--color-fg-2)]">{sub}</p>
-    </div>
+      <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>{sub}</p>
+    </motion.div>
   );
 }

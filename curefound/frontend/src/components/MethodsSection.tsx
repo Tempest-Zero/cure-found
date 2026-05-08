@@ -1,4 +1,7 @@
+import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { CircuitBoard, Layers, Network, Sigma, Workflow } from "lucide-react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 
 const PIPELINE = [
   {
@@ -28,27 +31,74 @@ const PIPELINE = [
   },
 ];
 
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
+const cardVariant = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
+
 export function MethodsSection() {
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // GSAP scrub — each card gets a subtle glow + scale as you scroll past it
+  useEffect(() => {
+    if (!gridRef.current) return;
+    const ctx = gsap.context(() => {
+      const cards = gsap.utils.toArray<HTMLElement>(".method-card");
+      cards.forEach((card) => {
+        gsap.to(card, {
+          scrollTrigger: {
+            trigger: card,
+            start: "top 75%",
+            end: "top 35%",
+            scrub: 0.6,
+          },
+          scale: 1.015,
+          borderColor: "color-mix(in oklab, var(--color-line) 50%, var(--color-acc) 50%)",
+          boxShadow: "0 12px 32px -16px rgba(94,227,139,.25)",
+        });
+      });
+    }, gridRef);
+    return () => ctx.revert();
+  }, []);
+
   return (
     <section id="methods" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
-      <div className="max-w-[760px]">
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-acc)]">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-[760px]"
+      >
+        <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
           05 — Methods
         </div>
-        <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)] sm:text-[44px]">
+        <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
           How it works, end to end.
         </h2>
-        <p className="mt-3 text-pretty text-[15px] text-[var(--color-fg-2)]">
+        <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
           Knowledge graph embedding + graph heuristic + traceable provenance. Every prediction
           can be opened and read.
         </p>
-      </div>
+      </motion.div>
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <motion.div
+        ref={gridRef}
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-40px" }}
+        className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
         {PIPELINE.map((s, i) => (
-          <div
+          <motion.div
             key={s.title}
-            className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5"
+            variants={cardVariant}
+            className="method-card tilt rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5"
           >
             <div className="flex items-center gap-2">
               <span className="font-mono text-[10px] tabular text-[var(--color-fg-3)]">
@@ -60,12 +110,18 @@ export function MethodsSection() {
               {s.title}
             </div>
             <p className="mt-1.5 text-[12.5px] leading-[1.55] text-[var(--color-fg-2)]">{s.body}</p>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Equation strip */}
-      <div className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5"
+      >
         <div className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
           model
         </div>
@@ -89,7 +145,7 @@ export function MethodsSection() {
         <div className="mt-2 font-mono text-[14px] text-[var(--color-fg-0)] sm:text-[15px]">
           RRF(d) = 1/(60 + rank<sub>model</sub>(d)) + 1/(60 + rank<sub>graph</sub>(d))
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

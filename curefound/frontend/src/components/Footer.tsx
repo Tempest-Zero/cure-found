@@ -12,8 +12,8 @@ export function Footer() {
           </span>
         </div>
         <div className="flex items-center gap-5 font-mono text-[12px] text-[var(--color-fg-3)]">
-          <a href="#methods" className="hover:text-[var(--color-fg-1)]">Methods</a>
-          <a href="#eval" className="hover:text-[var(--color-fg-1)]">Eval</a>
+          <a href="#methods" className="lift hover:text-[var(--color-fg-1)]">Methods</a>
+          <a href="#eval" className="lift hover:text-[var(--color-fg-1)]">Eval</a>
           <a href="/docs" target="_blank" rel="noreferrer" className="hover:text-[var(--color-fg-1)]">
             OpenAPI
           </a>

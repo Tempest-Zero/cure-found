@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, Stethoscope, X } from "lucide-react";
+import { AlertCircle, Stethoscope, X } from "lucide-react";
+import { KGPulse } from "./KGPulse";
 import {
   DIAGNOSE_PRESETS,
   NODE_BY_ID,
@@ -67,19 +68,25 @@ export function DiagnoseSection() {
   return (
     <section id="diagnose" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-[760px]">
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-acc)]">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-[760px]"
+        >
+          <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
             03 — Diagnose
           </div>
-          <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)] sm:text-[44px]">
+          <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
             From symptoms to candidate diseases.
           </h2>
-          <p className="mt-3 text-pretty text-[15px] text-[var(--color-fg-2)]">
+          <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
             Pick HPO-aligned symptoms — the API runs Jaccard + smoothed-IDF over the KG&apos;s{" "}
             <code className="font-mono text-[var(--color-fg-1)]">HAS_PHENOTYPE</code> edges and
             fuses both rankings via RRF. Useful as a triage hint, not a diagnosis.
           </p>
-        </div>
+        </motion.div>
         <ApiStatusChip sourceLabel="Jaccard+IDF" lastRequestState={lastApiState} className="mt-2" />
       </div>
 
@@ -92,7 +99,7 @@ export function DiagnoseSection() {
           <button
             key={p.label}
             onClick={() => applyPreset(p.symptoms)}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line-2)] bg-[var(--color-bg-2)] px-3 py-1.5 font-mono text-[11px] text-[var(--color-fg-2)] transition-colors hover:border-[var(--color-acc)]/40 hover:text-[var(--color-fg-1)]"
+            className="lift group inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line-2)] bg-[var(--color-bg-2)] px-3 py-1.5 font-mono text-[11px] text-[var(--color-fg-2)] transition-colors hover:border-[var(--color-acc)]/40 hover:text-[var(--color-fg-1)]"
             title={p.hint}
           >
             <span>{p.label}</span>
@@ -105,7 +112,7 @@ export function DiagnoseSection() {
 
       <div className="mt-7 grid gap-4 lg:grid-cols-2">
         {/* Symptom picker */}
-        <div className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
+        <div className="tilt rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
           <div className="mb-3 flex items-center justify-between">
             <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
               Symptoms · {picked.length} selected
@@ -127,7 +134,7 @@ export function DiagnoseSection() {
                   key={s.id}
                   onClick={() => toggle(s.id)}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 font-mono text-[11px] transition-colors",
+                    "lift rounded-full border px-3 py-1.5 font-mono text-[11px] transition-colors",
                     on
                       ? "border-[var(--color-acc)] bg-[var(--color-acc)]/12 text-[var(--color-acc)]"
                       : "border-[var(--color-line-2)] bg-[var(--color-bg-2)] text-[var(--color-fg-2)] hover:text-[var(--color-fg-1)]",
@@ -155,16 +162,16 @@ export function DiagnoseSection() {
             <button
               onClick={() => void run()}
               disabled={loading || picked.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-acc)] px-3 py-1.5 text-[13px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)] disabled:opacity-60"
+              className="lift inline-flex items-center gap-1.5 rounded-md bg-[var(--color-acc)] px-3 py-1.5 text-[13px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)] disabled:opacity-60"
             >
-              {loading ? <Loader2 size={13} className="animate-spin" /> : <Stethoscope size={13} />}
+              {loading ? <KGPulse size={13} /> : <Stethoscope size={13} />}
               Diagnose
             </button>
           </div>
         </div>
 
         {/* Results */}
-        <div className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)]">
+        <div className="tilt rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)]">
           <div className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-3">
             <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
               Candidate diseases · {data.candidates.length}
@@ -206,9 +213,19 @@ export function DiagnoseSection() {
               </li>
             )}
             {loading && data.candidates.length === 0 && (
-              <li className="px-5 py-8 text-center font-mono text-[11px] uppercase tracking-wider text-[var(--color-fg-3)]">
-                ranking diseases…
-              </li>
+              <>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <li key={i} className="flex items-center gap-4 px-5 py-3">
+                    <span className="skeleton h-4 w-7" />
+                    <span className="flex-1 space-y-1.5">
+                      <span className="skeleton block h-4 w-40" />
+                      <span className="skeleton block h-3 w-56" />
+                    </span>
+                    <span className="skeleton h-1.5 w-24 rounded-full" />
+                    <span className="skeleton h-4 w-10" />
+                  </li>
+                ))}
+              </>
             )}
             {data.candidates.slice(0, topK).map((c, i) => (
               <li key={c.disease_id} className="px-5 py-3">

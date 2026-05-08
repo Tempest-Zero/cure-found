@@ -111,20 +111,70 @@ def load_for_kg(
     kg,
     artifacts_dir: Path = DEFAULT_ARTIFACTS,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
-    """Load + validate. Raises `ArtifactStaleError` if the saved entity
-    vocabulary digest does not match the current KG."""
+    """Load + validate.
+
+    Exact match: artifact vocab == current KG vocab → return as-is.
+
+    Graceful superset: artifact vocab ⊂ current KG vocab (i.e. the KG
+    gained new isolated nodes after training, like PW:GSL_BIOSYN) →
+    reindex the embedding table to match the current KG's entity order,
+    inserting a zero row for each new entity.  This is safe when all new
+    entities have degree-0 (no triples), so they are never queried at
+    inference time.
+
+    Hard fail: current KG is missing entities the artifact was trained on
+    (KG vocabulary shrank), or artifact has no saved digest.
+    """
     E, R, meta = load(model_name, artifacts_dir)
     saved = meta.get("entity_vocab_sha256")
     current = _vocab_digest(kg.idx_to_entity)
+
     if saved is None:
         raise ArtifactStaleError(
             f"{model_name}_meta.json has no entity_vocab_sha256; re-train via "
             "scripts/colab_gnn_training.ipynb."
         )
-    if saved != current:
+
+    if saved == current:
+        return E, R, meta
+
+    # Digests differ — check if this is a safe superset case.
+    artifact_entities: list[str] = meta.get("idx_to_entity", [])
+    if not artifact_entities:
         raise ArtifactStaleError(
             f"{model_name} artifact is stale: saved digest={saved[:12]} "
             f"(n={meta.get('n_entities', '?')}) but current KG digest="
             f"{current[:12]} (n={len(kg.idx_to_entity)}). Re-train."
         )
-    return E, R, meta
+
+    artifact_set = set(artifact_entities)
+    current_set = set(kg.idx_to_entity)
+    new_entities = current_set - artifact_set
+    missing_entities = artifact_set - current_set
+
+    if missing_entities:
+        # KG lost entities the artifact depends on — cannot recover safely.
+        raise ArtifactStaleError(
+            f"{model_name} artifact references entities no longer in the KG "
+            f"({len(missing_entities)} missing, e.g. {next(iter(missing_entities))}). "
+            "Re-train via scripts/colab_gnn_training.ipynb."
+        )
+
+    # Safe superset: KG has strictly more entities, artifact has all it needs.
+    # Build a reindexed E that matches the current KG entity ordering.
+    artifact_idx = {ent: i for i, ent in enumerate(artifact_entities)}
+    n_current = len(kg.idx_to_entity)
+    E_new = np.zeros((n_current, E.shape[1]), dtype=E.dtype)
+    for current_i, ent in enumerate(kg.idx_to_entity):
+        art_i = artifact_idx.get(ent)
+        if art_i is not None:
+            E_new[current_i] = E[art_i]
+    # (rows for new_entities remain zero — they are isolated nodes, never queried)
+
+    import logging
+    logging.getLogger(__name__).info(
+        "distmult.load_for_kg: reindexed %s embeddings: %d artifact entities → "
+        "%d current KG entities (%d new isolated nodes padded with zeros)",
+        model_name, len(artifact_entities), n_current, len(new_entities),
+    )
+    return E_new, R, meta

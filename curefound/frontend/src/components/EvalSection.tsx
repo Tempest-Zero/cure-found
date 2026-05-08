@@ -143,14 +143,19 @@ export function EvalSection() {
   return (
     <section id="eval" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
       <div className="grid gap-10 lg:grid-cols-[420px_1fr]">
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-acc)]">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
             02 — Eval
           </div>
-          <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)] sm:text-[44px]">
+          <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
             The numbers, with confidence intervals.
           </h2>
-          <p className="mt-3 text-pretty text-[15px] text-[var(--color-fg-2)]">
+          <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
             Held-out leave-one-out over 16 TREATS triples on the LSD-scoped KG. n is small,
             so the bootstrap 95% CI is the honest headline — and it&apos;s wide on purpose.
             R-GCN and CompGCN share the same protocol; their columns light up the moment the
@@ -171,11 +176,11 @@ export function EvalSection() {
               </div>
             ))}
           </dl>
-        </div>
+        </motion.div>
 
         <div className="flex flex-col gap-4">
           {/* ----- Three-model comparison table with CIs ----- */}
-          <div className="overflow-hidden rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)]">
+          <div className="tilt overflow-hidden rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)]">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-[var(--color-line)] text-left">
@@ -261,7 +266,7 @@ export function EvalSection() {
           </div>
 
           {/* ----- Rank distribution ----- */}
-          <div className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
+          <div className="tilt rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
             <div className="mb-3 flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
                 Rank distribution · RotatE · n={PER_ITEM_RANKS.length}
@@ -308,7 +313,7 @@ export function EvalSection() {
           </div>
 
           {/* ----- Known-failure callout ----- */}
-          <div className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
+          <div className="tilt rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
             <div className="mb-3 flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
                 Honest failures · reviewer-flagged

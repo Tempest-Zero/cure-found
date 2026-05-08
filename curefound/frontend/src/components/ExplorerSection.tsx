@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import cytoscape from "cytoscape";
 import { EDGES, ENTITY_COLORS, NODE_TYPE } from "@/lib/data";
 
@@ -81,17 +82,23 @@ export function ExplorerSection() {
 
   return (
     <section id="explorer" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
-      <div className="max-w-[720px]">
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-acc)]">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-[720px]"
+      >
+        <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
           04 — Graph
         </div>
-        <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)] sm:text-[44px]">
+        <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
           The whole knowledge graph, browsable.
         </h2>
-        <p className="mt-3 text-pretty text-[15px] text-[var(--color-fg-2)]">
-          99 nodes · 163 edges · 7 relation types. Click a node to highlight its neighborhood.
+        <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
+          673 nodes · 1,057 edges · 7 relation types. Click a node to highlight its neighborhood.
         </p>
-      </div>
+      </motion.div>
 
       <div className="mt-8 rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)]">
         <div className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-3">

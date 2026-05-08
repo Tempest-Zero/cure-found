@@ -134,6 +134,73 @@ body {
 }
 .moving-border > * { position: relative; z-index: 1; }
 
+/* ============================================================
+   Fluid type scale — responsive without breakpoint flips
+   ============================================================ */
+:root {
+  --fs-display: clamp(2.5rem, 1.8rem + 3.5vw, 4.25rem);
+  --fs-h2:      clamp(2rem, 1.5rem + 2.5vw, 2.75rem);
+  --fs-h3:      clamp(1.25rem, 1rem + 1.25vw, 1.75rem);
+  --fs-body:    clamp(0.9375rem, 0.875rem + 0.3125vw, 1.0625rem);
+  --fs-eyebrow: clamp(0.625rem, 0.6rem + 0.125vw, 0.6875rem);
+}
+
+/* ============================================================
+   Micro-interaction utilities (CSS-only, no JS needed)
+   ============================================================ */
+
+/* .tilt — subtle 3D perspective rotate on hover */
+.tilt {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.tilt:hover {
+  transform: perspective(800px) rotateX(-1.5deg) rotateY(1.5deg) scale(1.012);
+  box-shadow: 0 12px 32px -16px rgba(94,227,139,.18);
+}
+
+/* .lift — gentle scale-up for interactive elements */
+.lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lift:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+.lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* .skeleton — shimmer loading placeholder */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-2) 25%,
+    var(--color-bg-3) 50%,
+    var(--color-bg-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* .reveal — fade-up on scroll (JS sets .is-visible) */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Beam keyframes (BackgroundBeams fallback) */
 @keyframes beam {
   0% { transform: translateY(-100%); opacity: 0; }
