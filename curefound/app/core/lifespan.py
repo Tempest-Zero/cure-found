@@ -73,9 +73,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Instantiate service layer. Kept here -- not in deps.py -- so services
     # are built once per app instance, not per request.
     from app.diagnose.service import DiagnoseService
-    from app.repurpose.service import RepurposeService
+    from app.repurpose.service import RepurposeService, _try_load_distmult_model
 
-    repurpose_service = RepurposeService(kg, E, R)
+    # Optionally load R-GCN / CompGCN artifacts produced by the Colab
+    # notebook. They share the lifespan staleness contract: if the .npz
+    # file exists but its vocab digest doesn't match the current KG, we
+    # let the ArtifactStaleError propagate so the failure is loud.
+    extra_models: dict[str, Any] = {}
+    for model_name in ("rgcn", "compgcn"):
+        head = _try_load_distmult_model(model_name, kg)
+        if head is not None:
+            extra_models[model_name] = head
+            _log.info(
+                "lifespan.kge.extra_loaded",
+                model=model_name,
+                n_entities=int(head.E.shape[0]),
+                dim=int(head.E.shape[1]),
+            )
+
+    repurpose_service = RepurposeService(kg, E, R, extra_models=extra_models)
     diagnose_service = DiagnoseService(kg)
 
     app.state.kg = kg

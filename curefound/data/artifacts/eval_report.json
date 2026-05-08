@@ -1,11 +1,12 @@
 {
+  "model": "RotatE",
   "protocol": "leave-one-out over TREATS triples; filtered rank over all Drug heads; other known TREATS heads for the same tail excluded.",
   "kg_version": "kg-mvp-0.1+sha.227c0192deca",
   "config": {
     "dim": 64,
     "gamma": 6.0,
     "lr": 0.001,
-    "epochs": 1000,
+    "epochs": 300,
     "batch_size": 512,
     "neg_per_pos": 64,
     "adv_temp": 0.5,
@@ -14,29 +15,67 @@
   "metrics": {
     "n_evaluated": 16,
     "n_candidates_per_eval": 19,
-    "mean_rank": 6.0,
-    "mrr": 0.3796674679487179,
-    "hits_at_1": 0.1875,
-    "hits_at_3": 0.375,
-    "hits_at_10": 0.75,
+    "mean_rank": 10.9375,
+    "mrr": 0.14611400650003592,
+    "hits_at_1": 0.0,
+    "hits_at_3": 0.125,
+    "hits_at_10": 0.375,
     "ranks": [
+      14,
+      14,
+      17,
+      12,
       2,
-      4,
-      8,
-      13,
-      1,
+      12,
       15,
-      1,
-      6,
-      4,
-      4,
+      17,
+      15,
+      14,
+      9,
       2,
+      8,
+      7,
       4,
-      16,
-      2,
-      13,
-      1
+      13
     ]
+  },
+  "bootstrap_ci_95": {
+    "mrr": {
+      "mean": 0.1458796961973892,
+      "lo": 0.08453538546828988,
+      "hi": 0.21761003880718946,
+      "std": 0.0339241262296285
+    },
+    "hits_at_1": {
+      "mean": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "std": 0.0
+    },
+    "hits_at_3": {
+      "mean": 0.1249375,
+      "lo": 0.0,
+      "hi": 0.3125,
+      "std": 0.07912609596891307
+    },
+    "hits_at_10": {
+      "mean": 0.3728125,
+      "lo": 0.125,
+      "hi": 0.625,
+      "std": 0.12087967484918968
+    },
+    "mean_rank": {
+      "mean": 10.95021875,
+      "lo": 8.625,
+      "hi": 13.3125,
+      "std": 1.188933384517336
+    },
+    "_meta": {
+      "n_resamples": 2000,
+      "alpha": 0.05,
+      "n_triples": 16,
+      "seed": 42
+    }
   },
   "per_item": [
     {
@@ -44,7 +83,7 @@
       "tail": "D:FABRY",
       "head_name": "Agalsidase alfa",
       "tail_name": "Fabry disease",
-      "rank": 2,
+      "rank": 14,
       "n_candidates": 17
     },
     {
@@ -52,7 +91,7 @@
       "tail": "D:FABRY",
       "head_name": "Agalsidase beta",
       "tail_name": "Fabry disease",
-      "rank": 4,
+      "rank": 14,
       "n_candidates": 17
     },
     {
@@ -60,7 +99,7 @@
       "tail": "D:POMPE",
       "head_name": "Alglucosidase alfa",
       "tail_name": "Pompe disease",
-      "rank": 8,
+      "rank": 17,
       "n_candidates": 19
     },
     {
@@ -68,7 +107,7 @@
       "tail": "D:NPC",
       "head_name": "Arimoclomol",
       "tail_name": "Niemann-Pick disease type C",
-      "rank": 13,
+      "rank": 12,
       "n_candidates": 17
     },
     {
@@ -76,7 +115,7 @@
       "tail": "D:GAUCHER",
       "head_name": "Eliglustat",
       "tail_name": "Gaucher disease",
-      "rank": 1,
+      "rank": 2,
       "n_candidates": 15
     },
     {
@@ -84,7 +123,7 @@
       "tail": "D:MPS2",
       "head_name": "Idursulfase",
       "tail_name": "Mucopolysaccharidosis type II",
-      "rank": 15,
+      "rank": 12,
       "n_candidates": 19
     },
     {
@@ -92,7 +131,7 @@
       "tail": "D:GAUCHER",
       "head_name": "Imiglucerase",
       "tail_name": "Gaucher disease",
-      "rank": 1,
+      "rank": 15,
       "n_candidates": 15
     },
     {
@@ -100,7 +139,7 @@
       "tail": "D:CF",
       "head_name": "Ivacaftor",
       "tail_name": "Cystic fibrosis",
-      "rank": 6,
+      "rank": 17,
       "n_candidates": 19
     },
     {
@@ -108,7 +147,7 @@
       "tail": "D:MPS1",
       "head_name": "Laronidase",
       "tail_name": "Mucopolysaccharidosis type I",
-      "rank": 4,
+      "rank": 15,
       "n_candidates": 19
     },
     {
@@ -116,7 +155,7 @@
       "tail": "D:FABRY",
       "head_name": "Migalastat",
       "tail_name": "Fabry disease",
-      "rank": 4,
+      "rank": 14,
       "n_candidates": 17
     },
     {
@@ -124,7 +163,7 @@
       "tail": "D:GAUCHER",
       "head_name": "Miglustat",
       "tail_name": "Gaucher disease",
-      "rank": 2,
+      "rank": 9,
       "n_candidates": 15
     },
     {
@@ -132,7 +171,7 @@
       "tail": "D:NPC",
       "head_name": "Miglustat",
       "tail_name": "Niemann-Pick disease type C",
-      "rank": 4,
+      "rank": 2,
       "n_candidates": 17
     },
     {
@@ -140,7 +179,7 @@
       "tail": "D:NPC",
       "head_name": "N-acetyl-L-leucine",
       "tail_name": "Niemann-Pick disease type C",
-      "rank": 16,
+      "rank": 8,
       "n_candidates": 17
     },
     {
@@ -148,7 +187,7 @@
       "tail": "D:GAUCHER",
       "head_name": "Taliglucerase alfa",
       "tail_name": "Gaucher disease",
-      "rank": 2,
+      "rank": 7,
       "n_candidates": 15
     },
     {
@@ -156,7 +195,7 @@
       "tail": "D:HD",
       "head_name": "Tetrabenazine",
       "tail_name": "Huntington disease",
-      "rank": 13,
+      "rank": 4,
       "n_candidates": 19
     },
     {
@@ -164,9 +203,8 @@
       "tail": "D:GAUCHER",
       "head_name": "Velaglucerase alfa",
       "tail_name": "Gaucher disease",
-      "rank": 1,
+      "rank": 13,
       "n_candidates": 15
     }
-  ],
-  "model": "RotatE"
+  ]
 }

@@ -1,74 +1,103 @@
 """
 Drug-repurposing inference service.
 
-Inputs : disease_id (canonical), top_k, include_already_approved
+Inputs : disease_id, top_k, include_already_approved, model
 Outputs: ranked list of drug candidates with:
-          - model score (RotatE — relational rotation in complex space)
+          - model score
+              * RotatE   (default): -||h o r - t||_2 in complex space
+              * R-GCN / CompGCN: DistMult head over message-passed embeddings
           - graph evidence score (pathway-overlap Jaccard)
           - fused score (reciprocal-rank fusion, k=60)
           - evidence subgraph (short paths drug -> disease)
           - whether the (drug, disease) edge is already in the KG
             (UI dims "already approved" vs "novel prediction")
 
-Ranking semantics (fix for C4 in the audit plan):
-  Approved drugs are filtered OUT of the candidate set BEFORE ranking when
-  `include_already_approved=False`. This means:
-      - `model_rank` and `graph_rank` are 1..len(candidates), not 1..n_drugs.
-      - The rank fields you see on the response match the returned ordering.
-  Previously we scored every drug globally, then filtered approved drugs
-  post-hoc, which produced nonsense like "position #1 has model_rank=10".
+The model is selected per request via the optional `model` field on
+RepurposeRequest. If a requested model's artifacts are not loaded (e.g.
+the GNN training notebook hasn't been run yet), the service raises
+`ModelUnavailableError` and the router returns 503.
 
-Graph score (fix for H1): the drug-side walker is now explicitly filtered to
-`rel == "TARGETS"`. Previously it traversed every out-edge type (including
-TREATS), which worked by accident on the seed KG but misfired silently once
-heterogeneous edges arrived.
+Ranking semantics:
+  Approved drugs are filtered OUT of the candidate set BEFORE ranking
+  when `include_already_approved=False`, so `model_rank` and `graph_rank`
+  match the returned ordering.
 
-Approval lookup (fix for H2): `kg.treats_edge[(drug, disease)]` is an O(1)
-lookup; we no longer scan the full triple list per drug.
-
-Ranking logic is intentionally pluggable -- in Phase 2 the RotatE call gets
-replaced by a PyKEEN pipeline (CompGCN, RotatE-MoE, etc.); everything else
-stays the same.
+Graph score: drug-side walker is filtered to `rel == "TARGETS"`; disease
+side walks `(CAUSES|ASSOCIATED_WITH) -> ENCODES -> PARTICIPATES_IN`.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 
 from app.kg.loader import KG
-from app.ml import rotate as kge_mod
+from app.ml import distmult, rotate
+
+
+class ModelUnavailableError(KeyError):
+    """The caller asked for a model whose artifacts aren't loaded."""
+
+
+@dataclass
+class _ModelHead:
+    """One scoring head: (E, R) tables + a `rank_heads` function.
+
+    `rank_heads(E, R, r_idx, t_idx, candidate_heads)` -> (sorted_ids, sorted_scores).
+    """
+
+    name: str
+    E: np.ndarray
+    R: np.ndarray
+    rank_heads: Callable[[np.ndarray, np.ndarray, int, int, np.ndarray], tuple[np.ndarray, np.ndarray]]
 
 
 @dataclass
 class RepurposeResult:
     drug_id: str
     drug_name: str
-    model_score: float  # RotatE score (higher = better)
-    graph_score: float  # Jaccard over pathway neighborhoods (0..1)
-    fused_score: float  # RRF (higher = better)
-    model_rank: int  # 1-indexed rank within the candidate set
-    graph_rank: int  # 1-indexed rank within the candidate set
+    model_score: float
+    graph_score: float
+    fused_score: float
+    model_rank: int
+    graph_rank: int
     already_approved: bool
     approval_year: int | None
     evidence_paths: list[list[dict[str, Any]]]
 
 
 class RepurposeService:
-    def __init__(self, kg: KG, E: np.ndarray, R: np.ndarray):
+    def __init__(
+        self,
+        kg: KG,
+        E: np.ndarray,
+        R: np.ndarray,
+        *,
+        extra_models: dict[str, _ModelHead] | None = None,
+        default_model: str = "rotate",
+    ) -> None:
         self.kg = kg
-        self.E = E
-        self.R = R
-        # Known TREATS set for "already_approved" flag (fix for H2: read from
-        # the KG's pre-built index instead of rebuilding per instance).
+        # The "rotate" head is always present (RotatE is the canonical model
+        # the lifespan loads). Additional models (rgcn / compgcn) are added
+        # by the lifespan when their artifacts exist on disk.
+        self._models: dict[str, _ModelHead] = {
+            "rotate": _ModelHead(
+                name="rotate",
+                E=E,
+                R=R,
+                rank_heads=rotate.rank_heads,
+            ),
+        }
+        if extra_models:
+            self._models.update(extra_models)
+        self._default_model = default_model
+
+        # Known TREATS set for "already_approved" flag.
         self.treats_set: set[tuple[str, str]] = set(kg.treats_edge.keys())
 
-        # Precompute the set of pathways each drug is connected to via
-        # TARGETS -> PARTICIPATES_IN. The explicit rel=="TARGETS" filter is
-        # the fix for H1 -- previously the walker traversed every
-        # drug-out-edge type.
+        # Drug -> set of pathway ids (via TARGETS -> PARTICIPATES_IN).
         self.drug_pathways: dict[str, set[str]] = {}
         for d in kg.drugs:
             pathways: set[str] = set()
@@ -80,8 +109,8 @@ class RepurposeService:
                         pathways.add(pw)
             self.drug_pathways[d] = pathways
 
-        # Precompute pathways each disease is tied to via
-        # CAUSES/ASSOCIATED_WITH -> ENCODES -> PARTICIPATES_IN.
+        # Disease -> set of pathway ids
+        # (via (CAUSES|ASSOCIATED_WITH) -> ENCODES -> PARTICIPATES_IN).
         self.disease_pathways: dict[str, set[str]] = {}
         for dis in kg.diseases:
             pathways: set[str] = set()
@@ -96,37 +125,57 @@ class RepurposeService:
                             pathways.add(pw)
             self.disease_pathways[dis] = pathways
 
+    # ------------------------------------------------------------------ #
+    # Public read API
+    # ------------------------------------------------------------------ #
+
+    @property
+    def available_models(self) -> list[str]:
+        return sorted(self._models.keys())
+
+    def has_model(self, name: str) -> bool:
+        return name in self._models
+
     def predict(
-        self, disease_id: str, top_k: int = 10, include_already_approved: bool = False
+        self,
+        disease_id: str,
+        top_k: int = 10,
+        include_already_approved: bool = False,
+        model: str | None = None,
     ) -> list[RepurposeResult]:
         if disease_id not in self.kg.node_by_id:
             raise KeyError(f"Unknown disease id: {disease_id}")
 
-        # ---- 1. Determine the candidate set UP FRONT (fix for C4) ---- #
+        model_name = model or self._default_model
+        head = self._models.get(model_name)
+        if head is None:
+            raise ModelUnavailableError(
+                f"Model {model_name!r} is not loaded. Available: {self.available_models}"
+            )
+
+        # ---- 1. Candidate set determined up front ---- #
         if include_already_approved:
             candidates = list(self.kg.drugs)
         else:
             candidates = [d for d in self.kg.drugs if (d, disease_id) not in self.treats_set]
-        # Alphabetical order -> deterministic rank assignment in ties (H7).
-        candidates.sort()
+        candidates.sort()  # Deterministic tie-breaking
         if not candidates:
             return []
 
         cand_idxs = np.array([self.kg.entity_to_idx[d] for d in candidates], dtype=np.int64)
 
-        # ---- 2. Model scores over the candidate set only ---- #
+        # ---- 2. Model scores ---- #
         r_idx = self.kg.relation_to_idx["TREATS"]
         dis_idx = self.kg.entity_to_idx[disease_id]
-        ranked_idx, ranked_scores = kge_mod.rank_heads(self.E, self.R, r_idx, dis_idx, cand_idxs)
+        ranked_idx, ranked_scores = head.rank_heads(head.E, head.R, r_idx, dis_idx, cand_idxs)
         model_score_of = {
             self.kg.idx_to_entity[int(e)]: float(s)
             for e, s in zip(ranked_idx, ranked_scores, strict=False)
         }
-        # Assign ranks with canonical-id tiebreak (H7).
         model_ranked = sorted(candidates, key=lambda d: (-model_score_of[d], d))
         model_rank_of = {d: i + 1 for i, d in enumerate(model_ranked)}
 
-        # ---- 3. Graph scores over the candidate set only ---- #
+        # ---- 3. Graph scores ---- #
         dis_pw = self.disease_pathways.get(disease_id, set())
         graph_score_of: dict[str, float] = {}
         for d in candidates:
@@ -136,18 +185,17 @@ class RepurposeService:
             else:
                 union = len(dp | dis_pw) or 1
                 graph_score_of[d] = len(dp & dis_pw) / union
-
         graph_ranked = sorted(candidates, key=lambda d: (-graph_score_of[d], d))
         graph_rank_of = {d: i + 1 for i, d in enumerate(graph_ranked)}
 
-        # ---- 4. Fuse by RRF (k=60 is standard) ---- #
+        # ---- 4. Fuse via RRF (k=60) ---- #
         def rrf(d: str) -> float:
             return 1.0 / (60 + model_rank_of[d]) + 1.0 / (60 + graph_rank_of[d])
 
         fused_order = sorted(candidates, key=lambda d: (-rrf(d), d))
         top = fused_order[:top_k]
 
-        # ---- 5. Evidence paths + approval-year ONLY for the top_k ---- #
+        # ---- 5. Evidence paths + approval-year for top_k only ---- #
         results: list[RepurposeResult] = []
         for d in top:
             edge = self.kg.treats_edge.get((d, disease_id))
@@ -171,18 +219,38 @@ class RepurposeService:
         return results
 
 
+def _try_load_distmult_model(name: str, kg: KG) -> _ModelHead | None:
+    """Best-effort loader for an optional R-GCN / CompGCN artifact.
+
+    Returns None silently if the artifact isn't on disk yet (the user
+    hasn't run the Colab notebook). Raises if the artifact exists but
+    is stale -- that's a real bug we want loud.
+    """
+    try:
+        E, R, _meta = distmult.load_for_kg(name, kg)
+    except FileNotFoundError:
+        return None
+    return _ModelHead(name=name, E=E, R=R, rank_heads=distmult.rank_heads)
+
+
 def build_default_service() -> RepurposeService:
+    """CLI / dev entry-point. Loads RotatE + any DistMult-scored GNN
+    artifacts that happen to be on disk."""
     from app.kg.loader import load_kg
 
     kg = load_kg()
-    E, R, _ = kge_mod.load_for_kg(kg)
-    return RepurposeService(kg, E, R)
+    E, R, _ = rotate.load_for_kg(kg)
+    extras: dict[str, _ModelHead] = {}
+    for name in ("rgcn", "compgcn"):
+        head = _try_load_distmult_model(name, kg)
+        if head is not None:
+            extras[name] = head
+    return RepurposeService(kg, E, R, extra_models=extras)
 
 
 if __name__ == "__main__":
-    # Run as a module for correct package resolution:
-    #     python -m app.repurpose.service
     svc = build_default_service()
+    print(f"Available models: {svc.available_models}")
     for dis in ["D:GAUCHER", "D:NPC", "D:FABRY"]:
         print(f"\n--- Repurposing candidates for {svc.kg.node_by_id[dis]['name']} ---")
         for r in svc.predict(dis, top_k=5, include_already_approved=False):
@@ -194,6 +262,7 @@ if __name__ == "__main__":
             )
             for p in r.evidence_paths[:1]:
                 chain = " -> ".join(
-                    f"[{x['rel']}:{x['direction']}] {svc.kg.node_by_id[x['to']]['name']}" for x in p
+                    f"[{x['rel']}:{x['direction']}] {svc.kg.node_by_id[x['to']]['name']}"
+                    for x in p
                 )
                 print(f"        via: {svc.kg.node_by_id[p[0]['from']]['name']} {chain}")

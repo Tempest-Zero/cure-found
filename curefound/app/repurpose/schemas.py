@@ -8,6 +8,8 @@ the OpenAPI description.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 # Canonical Disease node id (D:NPC) or external id (MONDO/OMIM/ORPHA). Accepts
@@ -17,6 +19,12 @@ DISEASE_INPUT_RE = (
     r"|OMIM:\d{6}|omim:\d{6}"
     r"|ORPHA:\d+|orpha:\d+)$"
 )
+
+# Model selector. RotatE is always available (loaded by lifespan); the
+# DistMult-scored GNNs (R-GCN, CompGCN) are only present if the matching
+# `<name>.npz` + `<name>_meta.json` artifacts ship with the deploy. The
+# router returns 503 if a missing model is requested.
+ModelName = Literal["rotate", "rgcn", "compgcn"]
 
 
 class RepurposeRequest(BaseModel):
@@ -36,6 +44,16 @@ class RepurposeRequest(BaseModel):
             "set. If false (default), approved drugs are excluded BEFORE "
             "ranking so model_rank / graph_rank describe the "
             "novel-prediction universe."
+        ),
+    )
+    model: ModelName = Field(
+        "rotate",
+        description=(
+            "Which knowledge-graph model to score with. "
+            "`rotate` (default) = RotatE complex rotations (Sun 2019). "
+            "`rgcn` = R-GCN (Schlichtkrull 2018) with DistMult head. "
+            "`compgcn` = CompGCN (Vashishth 2020) with DistMult head. "
+            "Returns 503 if the requested model's artifacts are not loaded."
         ),
     )
 
@@ -68,9 +86,10 @@ class RepurposeCandidate(BaseModel):
     model_score: float = Field(
         ...,
         description=(
-            "RotatE score, -||h o r - t||_2 in complex space (relational rotation, "
-            "Sun et al. ICLR 2019). Higher is better; scale is model-dependent and "
-            "not comparable across retrains."
+            "Score from the chosen model. RotatE: -||h o r - t||_2 in complex "
+            "space. R-GCN / CompGCN: DistMult sum_d h_d * r_d * t_d over "
+            "message-passed embeddings. Higher = more plausible. Scale is "
+            "per-model and per-retrain — never compare across them."
         ),
     )
     graph_score: float = Field(
