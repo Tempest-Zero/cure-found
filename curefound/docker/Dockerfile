@@ -106,13 +106,14 @@ ENV ENVIRONMENT=production \
     SEED_KG_PATH=data/seed/kg.json \
     ARTIFACTS_DIR=data/artifacts \
     HOST=0.0.0.0 \
-    PORT=8000
+    PORT=7860
 
 # Make /app writable by the non-root user (logs, etc.).
 RUN chown -R appuser:appgroup /app
 USER appuser
 
-EXPOSE 8000
+# 7860 = Hugging Face Spaces default port (also works on Fly.io / local).
+EXPOSE 7860
 
-# Use a shell-form CMD so $PORT (Fly.io injects this at runtime) expands.
-CMD ["sh", "-c", "exec python -m uvicorn app.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000}"]
+# Shell-form CMD so $PORT expands at runtime (HF Spaces, Fly.io, docker run).
+CMD ["sh", "-c", "exec python -m uvicorn app.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-7860}"]

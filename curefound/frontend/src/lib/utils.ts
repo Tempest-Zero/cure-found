@@ -7,13 +7,15 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Where to send API requests.
- * - When the SPA is served from `/ui/...` (production/Docker), call relative.
- * - When running `vite dev` on :5173, point at the FastAPI dev server :8000.
+ * - Production (Docker / HF Spaces / any host): served from the same origin,
+ *   so use relative paths (""). Detect by NOT being on the Vite dev port.
+ * - Local Vite dev server (:5173): proxy is not set up, hit FastAPI on :8000.
  */
-const API_BASE =
-  typeof window !== "undefined" && window.location.pathname.startsWith("/ui")
-    ? ""
-    : "http://localhost:8000";
+const IS_DEV =
+  typeof window !== "undefined" &&
+  (window.location.port === "5173" || window.location.port === "5174");
+
+const API_BASE = IS_DEV ? "http://localhost:8000" : "";
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
