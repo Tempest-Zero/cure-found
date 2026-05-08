@@ -9,14 +9,23 @@ import {
   type RepurposeCandidate,
   type RepurposeResponse,
 } from "@/lib/data";
-import { api, cn } from "@/lib/utils";
+import { api, cn, fetchAvailableModels, modelLabel, type ModelName } from "@/lib/utils";
 import { MovingBorder } from "./aceternity";
 import { ApiStatusChip } from "./ApiStatusChip";
 
 /**
  * POST /repurpose — schema in app/repurpose/schemas.py.
- * Request:  { disease_id, top_k, include_already_approved }
+ * Request:  { disease_id, top_k, include_already_approved, model }
  * Response: { disease_id, disease_name, candidates: [...] }
+ *
+ * `model` selects which KG-embedding backend scores the candidates:
+ *   - rotate  : RotatE complex rotations (Sun 2019), always bundled
+ *   - rgcn    : R-GCN (Schlichtkrull 2018) + DistMult head — optional
+ *   - compgcn : CompGCN (Vashishth 2020) + DistMult head — optional
+ *
+ * The optional models load only if their .npz artifacts shipped with the
+ * deploy (the Colab notebook produces them). GET /repurpose/models returns
+ * the live set; we fetch it on mount and only render chips for those.
  */
 const EMPTY_REPURPOSE: RepurposeResponse = {
   disease_id: "",
@@ -28,6 +37,8 @@ export function RepurposeSection() {
   const [diseaseId, setDiseaseId] = useState("D:NPC");
   const [topK, setTopK] = useState(8);
   const [includeApproved, setIncludeApproved] = useState(false);
+  const [model, setModel] = useState<ModelName>("rotate");
+  const [availableModels, setAvailableModels] = useState<ModelName[]>(["rotate"]);
   const [data, setData] = useState<RepurposeResponse>(EMPTY_REPURPOSE);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(0);
@@ -49,6 +60,7 @@ export function RepurposeSection() {
           disease_id: diseaseId,
           top_k: topK,
           include_already_approved: includeApproved,
+          model,
         }),
       });
       setData(r);
@@ -58,19 +70,44 @@ export function RepurposeSection() {
       setData(EMPTY_REPURPOSE);
       setSelected(0);
       setLastApiState("offline");
-      setErrorMsg(
-        err instanceof Error ? err.message : "Backend unreachable — check the API server.",
-      );
+      const msg = err instanceof Error ? err.message : "Backend unreachable — check the API server.";
+      // 503 = the chosen model isn't loaded in this deploy. Fall back to RotatE
+      // so the demo keeps working instead of leaving the user staring at an
+      // error chip with no remedy.
+      if (msg.startsWith("503") && model !== "rotate") {
+        setModel("rotate");
+        setErrorMsg(
+          `Model "${modelLabel(model)}" isn't loaded in this deploy — falling back to RotatE.`,
+        );
+      } else {
+        setErrorMsg(msg);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  // Auto-run on mount + whenever the disease changes.
+  // Fetch available models once on mount. The default chip set is just
+  // ["rotate"] so the UI renders something sensible while the call resolves.
+  useEffect(() => {
+    let alive = true;
+    fetchAvailableModels().then((ms) => {
+      if (!alive) return;
+      setAvailableModels(ms);
+      // If the current selection isn't loaded, fall back to the first option.
+      if (!ms.includes(model)) setModel(ms[0] ?? "rotate");
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-run on mount + whenever the disease or model changes.
   useEffect(() => {
     void run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [diseaseId]);
+  }, [diseaseId, model]);
 
   const visibleCands = data.candidates.slice(0, topK);
   const sel = visibleCands[selected];
@@ -83,7 +120,7 @@ export function RepurposeSection() {
           title="Rank candidate drugs for a rare disease."
           sub="Pick a disease — get a ranked list of drug candidates with the full evidence path through the KG, plus the model and graph scores behind each rank."
         />
-        <ApiStatusChip sourceLabel="RotatE" lastRequestState={lastApiState} className="mt-2" />
+        <ApiStatusChip sourceLabel={modelLabel(model)} lastRequestState={lastApiState} className="mt-2" />
       </div>
 
       <div className="mt-10 grid gap-4 lg:grid-cols-[440px_1fr]">
@@ -105,6 +142,20 @@ export function RepurposeSection() {
                   </option>
                 ))}
               </select>
+
+              <div className="mt-3">
+                <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
+                  Model
+                </label>
+                <ModelChipGroup
+                  available={availableModels}
+                  selected={model}
+                  onSelect={setModel}
+                />
+                <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-[var(--color-fg-3)]">
+                  Score per-model and per-retrain — never compare values across.
+                </p>
+              </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-[12px] text-[var(--color-fg-2)]">
@@ -423,6 +474,52 @@ function RankBox({ rank, graphRank }: { rank: number; graphRank: number }) {
       <div className="mt-2 font-mono text-[10px] text-[var(--color-fg-3)]">
         model #{rank} · graph #{graphRank}
       </div>
+    </div>
+  );
+}
+
+/* ---------------------------- Model chip group ------------------------- */
+const ALL_MODELS: ModelName[] = ["rotate", "rgcn", "compgcn"];
+
+function ModelChipGroup({
+  available,
+  selected,
+  onSelect,
+}: {
+  available: ModelName[];
+  selected: ModelName;
+  onSelect: (m: ModelName) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {ALL_MODELS.map((m) => {
+        const isAvailable = available.includes(m);
+        const isActive = selected === m;
+        return (
+          <button
+            key={m}
+            type="button"
+            onClick={() => isAvailable && onSelect(m)}
+            disabled={!isAvailable}
+            title={
+              isAvailable
+                ? `Score with ${modelLabel(m)}`
+                : `${modelLabel(m)} not loaded in this deploy — re-train via scripts/colab_gnn_training.ipynb to enable.`
+            }
+            className={cn(
+              "rounded-md border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors",
+              isActive
+                ? "border-[var(--color-acc)]/60 bg-[var(--color-acc)]/15 text-[var(--color-acc)]"
+                : isAvailable
+                  ? "border-[var(--color-line-2)] bg-[var(--color-bg-2)] text-[var(--color-fg-1)] hover:border-[var(--color-acc)]/40 hover:text-[var(--color-fg-0)]"
+                  : "cursor-not-allowed border-dashed border-[var(--color-line)] bg-transparent text-[var(--color-fg-3)] opacity-60",
+            )}
+          >
+            {modelLabel(m)}
+            {!isAvailable && <span className="ml-1 text-[9px] opacity-70">— pending</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }

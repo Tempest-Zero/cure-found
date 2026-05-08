@@ -15,12 +15,17 @@ release.
 
 ## What it does
 
-Two demo flows, both working end-to-end against the 99-node seed KG:
+Two demo flows, both working end-to-end against the 673-node LSD-scoped KG:
 
 1. **Drug repurposing.** Given a rare disease (e.g. Niemann-Pick C), rank drug
-   candidates most likely to treat it. Hybrid ranker: **RotatE** link-prediction
-   `(drug, TREATS, disease)` + Jaccard pathway-neighborhood overlap + Reciprocal
-   Rank Fusion. Returns evidence paths per candidate for explainability.
+   candidates most likely to treat it. Hybrid ranker: a **knowledge-graph
+   embedding** model scores `(drug, TREATS, disease)` link-plausibility, fused
+   with Jaccard pathway-neighborhood overlap via Reciprocal Rank Fusion (k=60).
+   Three KG-embedding backends are wired in: **RotatE** (always shipped),
+   **R-GCN** and **CompGCN** (loaded if their PyKEEN-trained artifacts are
+   bundled). The chosen model is per-request via the `model` field; the API
+   returns `503 model_unavailable` if the requested artifacts aren't on disk.
+   Returns evidence paths per candidate for explainability.
 
 2. **Symptom-based diagnosis.** Given HPO phenotype terms (e.g. cherry-red spot +
    hypotonia + seizures), rank candidate diseases. Hybrid ranker: Jaccard symptom
@@ -143,6 +148,7 @@ dual-mount for backward compatibility with the existing frontend.
 | GET  | `/search?q=&type=&limit=` | Substring search with optional type filter |
 | GET  | `/node/{node_id}` | Node detail + xrefs + in/out degree |
 | GET  | `/subgraph?node_id=&k=&max_nodes=` | Cytoscape-ready k-hop subgraph |
+| GET  | `/repurpose/models` | List the KGE backends loaded in this deploy |
 | POST | `/repurpose` | Ranked drug candidates with evidence paths |
 | POST | `/diagnose`  | Ranked disease candidates from HPO symptom ids |
 
@@ -151,14 +157,23 @@ Live OpenAPI: `GET /docs` (local environment only).
 ### Quick examples
 
 ```bash
-# Repurposing for Niemann-Pick C (canonical or MONDO id both work)
+# Which scoring backends are loaded in this deploy?
+curl http://localhost:8000/repurpose/models
+# {"models": ["rotate"]}              # baseline deploy (no GNN artifacts shipped)
+# {"models": ["compgcn", "rgcn", "rotate"]}   # full deploy
+
+# Repurposing for Niemann-Pick C (canonical or MONDO id both work).
+# `model` is optional and defaults to "rotate".
 curl -X POST http://localhost:8000/repurpose \
   -H "Content-Type: application/json" \
-  -d '{"disease_id": "D:NPC", "top_k": 5, "include_already_approved": false}'
+  -d '{"disease_id": "D:NPC", "top_k": 5, "include_already_approved": false, "model": "rotate"}'
 
 curl -X POST http://localhost:8000/repurpose \
   -H "Content-Type: application/json" \
-  -d '{"disease_id": "MONDO:0009937", "top_k": 5}'
+  -d '{"disease_id": "MONDO:0009937", "top_k": 5, "model": "compgcn"}'
+
+# If the requested model wasn't bundled, the API returns 503 with
+# {"detail": {"error": "model_unavailable", "available_models": [...]}}.
 
 # Diagnose from HPO ids
 curl -X POST http://localhost:8000/diagnose \
@@ -244,31 +259,42 @@ needed at training time; the API server loads complex64 numpy arrays and compute
 protocol: retrain RotatE on N-1 `TREATS` triples, rank every Drug as a
 possible head for each held-out tail, filter other known-true heads
 before ranking. Report written to `data/artifacts/eval_report.json`,
-including a non-parametric **bootstrap-95% CI** over the per-fold ranks.
+including a non-parametric **bootstrap-95% CI** over the per-fold ranks
+(`--bootstrap 2000`).
 
-> Numbers below are placeholders pending the post-HPO-expansion eval run
-> (in flight on CPU; this README will be regenerated once
-> `eval_report.json` lands). The methodology table — what each model
-> family structurally supports — stays valid regardless of the headline
-> numbers.
+**KG: 673 entities · 1,057 edges · 16 held-out TREATS triples · 17–19 Drug candidates per fold.**
 
-**KG: 673 entities · 1057 edges · 16 held-out TREATS triples · 19 Drug candidates.**
+| Metric | RotatE (mean) | Bootstrap 95% CI | R-GCN | CompGCN |
+|---|---|---|---|---|
+| MRR (filtered) | 0.146 | [0.085, 0.218] | _pending T4 retrain_ | _pending T4 retrain_ |
+| Hits@1 | 0.000 | [0.000, 0.000] | _pending_ | _pending_ |
+| Hits@3 | 0.125 | [0.000, 0.313] | _pending_ | _pending_ |
+| Hits@10 | 0.375 | [0.125, 0.625] | _pending_ | _pending_ |
+| Mean rank ↓ | 10.94 | [8.63, 13.31] | _pending_ | _pending_ |
 
-| Metric | TransE (legacy 99-node) | RotatE (post-HPO 673-node) | Bootstrap CI |
-|---|---|---|---|
-| MRR (filtered) | 0.131 | _pending_ | _pending_ |
-| Hits@1 | 0.000 | _pending_ | _pending_ |
-| Hits@3 | 0.062 | _pending_ | _pending_ |
-| Hits@10 | 0.562 | _pending_ | _pending_ |
-| Mean rank | 9.88 | _pending_ | _pending_ |
+R-GCN and CompGCN train via `scripts/colab_gnn_training.ipynb` on a free Colab T4
+(~30–60 min); the resulting `rgcn.npz` + `compgcn.npz` artifacts drop into
+`data/artifacts/` and the lifespan picks them up automatically next boot. The
+runtime never imports PyTorch — DistMult-scored embeddings are evaluated as
+pure-NumPy tensor contractions (`app/ml/distmult.py`).
 
-**Why this counts as deep learning.** RotatE is an end-to-end neural
-representation-learning model — trainable embedding layers, Adam,
-self-adversarial sigmoid loss, gradient backprop. The depth of
-knowledge-graph embedding methods lies in the learned feature space,
-not stacked layers (Hamilton, Ying & Leskovec, NeurIPS 2017). The
-in-progress GNN comparison adds R-GCN and CompGCN (PyKEEN) for an
-explicit message-passing baseline.
+**Honest failures (RotatE, post-HPO).** Three reviewer-flagged cases:
+
+| Drug → Disease | Rank | Why |
+|---|---|---|
+| Arimoclomol → Niemann-Pick C | 12 / 17 | HSP-co-inducer mechanism is unrepresented in the KG. |
+| N-acetyl-L-leucine → Niemann-Pick C | 8 / 17 | Mid-pack — moved up from 14 thanks to HPO overlap with Miglustat (rank 2). |
+| Tetrabenazine → Huntington | 4 / 19 | Top-5 — symptomatic VMAT2 link captured. |
+
+Per-fold ranks live in `data/artifacts/eval_report.json::per_item`; bright spots
+include Eliglustat → Gaucher rank 2 and Miglustat → NPC rank 2.
+
+**Why this counts as deep learning.** Each KGE model is an end-to-end
+representation-learning system — trainable embedding tables, Adam, sigmoid /
+contrastive loss, gradient backprop. R-GCN and CompGCN add explicit
+**message-passing** layers on top of the embedding tables (Schlichtkrull 2018;
+Vashishth 2020). Comparing all three on the same LOO protocol is the headline
+ML experiment of the project.
 
 ### Diagnostic sanity-check on hand-picked LSD profiles
 
@@ -289,9 +315,15 @@ All scores exposed by the API carry `description=` in the OpenAPI schema.  Summa
 
 **Repurposing (`/repurpose`)**
 
-- `model_score` — RotatE: `−‖h ∘ r − t‖₂` in complex space, where `r = e^(iθ)`.
-  Higher is better. Not comparable across retrains (the embedding space has
-  global phase symmetry).
+- `model_score` — depends on the chosen `model`:
+  - **RotatE**: `−‖h ∘ r − t‖₂` in complex space, where `r = e^(iθ)`.
+  - **R-GCN / CompGCN**: DistMult head `Σ_d h_d · r_d · t_d` over message-passed
+    embeddings (the GNN message-passing happens at training time inside PyKEEN;
+    the runtime container loads the resulting embedding tables and scores them
+    in NumPy).
+
+  Higher is better. Scale is per-model and per-retrain — never compare scores
+  across them (compare ranks instead).
 - `graph_score` — Jaccard overlap between the drug's pathway neighborhood
   (`drug → TARGETS → protein → PARTICIPATES_IN → pathway`) and the disease's
   neighborhood (`disease → CAUSES → gene → ENCODES → protein → PARTICIPATES_IN →
@@ -338,10 +370,40 @@ python run.py smoke                          # end-to-end demo flow checks
 | FastAPI + Pydantic v2 backend | ✅ shipped |
 | React/Vite frontend with code-split bundles | ✅ shipped |
 | HPO HPOA expansion (894 HAS_PHENOTYPE edges) | ✅ shipped |
-| GNN comparison study (R-GCN + CompGCN via PyKEEN) | 🟡 in progress |
+| Per-request model selector (`/repurpose/models`) | ✅ shipped |
+| R-GCN + CompGCN trainer (PyKEEN) + Colab notebook | ✅ shipped |
+| GNN artifacts trained on T4 + LOO numbers | 🟡 in progress |
 | Multi-stage Docker image + Fly.io deploy | 🟡 in progress |
 | GitHub Actions CI (lint + test + image build) | ✅ wired |
 | Time-split eval on `approval_year` (PyKEEN pipeline) | 🔲 future |
+
+---
+
+## Training the GNN baselines (R-GCN + CompGCN, on Colab T4)
+
+PyTorch + PyKEEN are heavy; the production container deliberately omits both
+(image stays ~250 MB instead of ~750 MB). To train the GNN baselines, use the
+included Colab notebook — it clones the repo, installs PyKEEN, runs the LOO
+eval with bootstrap CIs, and packages the artifacts for download:
+
+1. Open `scripts/colab_gnn_training.ipynb` in Google Colab.
+2. Runtime → Change runtime type → **T4 GPU**.
+3. Run all cells (~30–60 min for both R-GCN and CompGCN combined).
+4. The last cell downloads `gnn_artifacts.zip`. Unzip into `data/artifacts/`:
+   ```
+   data/artifacts/rgcn.npz  rgcn_meta.json
+   data/artifacts/compgcn.npz  compgcn_meta.json
+   ```
+5. Restart the API (`python -m uvicorn app.main:app --reload`); on boot the
+   lifespan loads the new artifacts and `GET /repurpose/models` will report
+   `["compgcn", "rgcn", "rotate"]`.
+
+To train locally instead (CPU, very slow — `[ml]` adds PyKEEN; `torch` is already a runtime dep):
+
+```bash
+pip install -e ".[dev,ml]"
+python scripts/train_gnns_pykeen.py --models rgcn,compgcn --epochs 300 --bootstrap 2000
+```
 
 ---
 

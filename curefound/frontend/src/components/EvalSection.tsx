@@ -1,47 +1,132 @@
 import { motion } from "framer-motion";
 
 /**
- * Real numbers, taken verbatim from data/artifacts/eval_report.json.
- * Protocol: leave-one-out over the 16 TREATS triples in the seed KG;
- * for each held-out triple, all other Drug heads are filtered candidates.
+ * Real numbers, taken verbatim from data/artifacts/eval_report.json (see
+ * git for the file). Protocol: leave-one-out over the 16 TREATS triples
+ * in the LSD-scoped KG; for each held-out triple, all other Drug heads
+ * are ranked, with other known TREATS heads for the same disease tail
+ * filtered out (Sun-2019 / PyKEEN gold standard).
  *
- * TransE baseline: same protocol, NumPy implementation.
- * RotatE (ours):   same protocol, PyTorch training -> NumPy inference.
+ * Bootstrap 95% CIs come from `--bootstrap 2000` resamples in the same
+ * report -- they're the headline because n=16 is small enough that point
+ * estimates alone are misleading.
+ *
+ * R-GCN / CompGCN columns are filled in *only* if those PyKEEN-trained
+ * artifacts shipped (see `scripts/colab_gnn_training.ipynb`); otherwise
+ * the columns stay greyed out so the comparison story is visible without
+ * pretending the run already happened.
  */
-type Row = {
-  metric: string;
-  rotate: number;
-  transe: number;
-  fmt: (v: number) => string;
-  delta?: string;
+type Stat = { mean: number; lo: number; hi: number };
+
+type ModelEval = {
+  label: string;
+  shipped: boolean;
+  // null while we still need to run the Colab notebook
+  mrr: Stat | null;
+  hits1: Stat | null;
+  hits3: Stat | null;
+  hits10: Stat | null;
+  meanRank: Stat | null;
 };
 
-const ROWS: Row[] = [
-  { metric: "MRR (filtered)", rotate: 0.380, transe: 0.131, fmt: (v) => v.toFixed(3), delta: "+190%" },
-  { metric: "Hits@1",         rotate: 0.188, transe: 0.000, fmt: (v) => v.toFixed(3), delta: "first non-zero" },
-  { metric: "Hits@3",         rotate: 0.375, transe: 0.062, fmt: (v) => v.toFixed(3), delta: "+506%" },
-  { metric: "Hits@10",        rotate: 0.750, transe: 0.562, fmt: (v) => v.toFixed(3), delta: "+33%" },
-  { metric: "Mean rank ↓",    rotate: 6.00,  transe: 9.88,  fmt: (v) => v.toFixed(2), delta: "−39%" },
+const ROTATE: ModelEval = {
+  label: "RotatE",
+  shipped: true,
+  mrr: { mean: 0.146, lo: 0.085, hi: 0.218 },
+  hits1: { mean: 0.0, lo: 0.0, hi: 0.0 },
+  hits3: { mean: 0.125, lo: 0.0, hi: 0.313 },
+  hits10: { mean: 0.375, lo: 0.125, hi: 0.625 },
+  meanRank: { mean: 10.94, lo: 8.63, hi: 13.31 },
+};
+
+// Set `shipped: true` and fill the stats in once the GNN artifacts are
+// produced by the Colab T4 run. Keeping the column visible-but-empty makes
+// the comparison-study story explicit on the page.
+const RGCN: ModelEval = {
+  label: "R-GCN",
+  shipped: false,
+  mrr: null,
+  hits1: null,
+  hits3: null,
+  hits10: null,
+  meanRank: null,
+};
+
+const COMPGCN: ModelEval = {
+  label: "CompGCN",
+  shipped: false,
+  mrr: null,
+  hits1: null,
+  hits3: null,
+  hits10: null,
+  meanRank: null,
+};
+
+const MODELS = [ROTATE, RGCN, COMPGCN];
+
+type RowSpec = {
+  metric: string;
+  pick: (m: ModelEval) => Stat | null;
+  fmt: (v: number) => string;
+  /** Lower is better — flip the bar fill direction. */
+  lowerBetter?: boolean;
+};
+
+const ROW_SPECS: RowSpec[] = [
+  { metric: "MRR (filtered)", pick: (m) => m.mrr, fmt: (v) => v.toFixed(3) },
+  { metric: "Hits@1", pick: (m) => m.hits1, fmt: (v) => v.toFixed(3) },
+  { metric: "Hits@3", pick: (m) => m.hits3, fmt: (v) => v.toFixed(3) },
+  { metric: "Hits@10", pick: (m) => m.hits10, fmt: (v) => v.toFixed(3) },
+  { metric: "Mean rank", pick: (m) => m.meanRank, fmt: (v) => v.toFixed(2), lowerBetter: true },
 ];
 
-// Per-item ranks from eval_report.json — used for the rank distribution figure.
-const PER_ITEM_RANKS = [2, 4, 8, 13, 1, 15, 1, 6, 4, 4, 2, 4, 16, 2, 13, 1];
+// Per-item ranks from the current eval_report.json, in the same order as
+// the per_item array (so the histogram matches what the JSON would render).
+const PER_ITEM_RANKS = [14, 14, 17, 12, 2, 12, 15, 17, 15, 14, 9, 2, 8, 7, 4, 13];
+
+// The three reviewer-flagged "honest failures" — kept as a callout so the
+// page stays credible. Numbers from per_item entries on the current report.
+const KNOWN_FAILURES: { drug: string; disease: string; rank: string; note: string }[] = [
+  {
+    drug: "Arimoclomol",
+    disease: "Niemann-Pick C",
+    rank: "12 / 17",
+    note: "HSP-co-inducer mechanism is unrepresented in the KG — model has no signal to lean on.",
+  },
+  {
+    drug: "N-acetyl-L-leucine",
+    disease: "Niemann-Pick C",
+    rank: "8 / 17",
+    note: "Improved from previous KG (was rank 14) thanks to HPO phenotype overlap with Miglustat.",
+  },
+  {
+    drug: "Tetrabenazine",
+    disease: "Huntington",
+    rank: "4 / 19",
+    note: "VMAT2-mediated symptomatic treatment now in the top-5 — HD lacks lysosomal pathway depth.",
+  },
+];
 
 const SETUP: [string, string][] = [
-  ["Model",        "RotatE — relational rotation (Sun et al., ICLR 2019)"],
-  ["Embedding",    "ℂ⁶⁴ — entities ∈ ℂ^d, relations as unit-modulus rotations"],
-  ["KG",           "99 nodes · 163 edges · 7 relation types"],
-  ["Protocol",     "Leave-one-out over 16 TREATS triples · filtered rank"],
-  ["Loss",         "Self-adversarial sigmoid · γ=6.0 · 64 negs/pos"],
-  ["Optimizer",    "Adam · lr=1e-3 · 1000 epochs · batch 512"],
-  ["Hardware",     "Single CPU · ~30 s per fold · 16 folds"],
+  ["KG", "673 nodes · 1,057 edges · 7 relation types · 13 LSDs + HD + CF"],
+  ["Phenotype layer", "894 HAS_PHENOTYPE edges from HPOA (real curated data)"],
+  ["Protocol", "Leave-one-out · filtered rank · n=16 TREATS triples"],
+  ["Bootstrap", "Non-parametric resample · 2,000 iters · 95% CI"],
+  ["RotatE", "ℂ⁶⁴ · γ=6.0 · self-adv. sigmoid · 64 negs · Adam 1e-3 · 300 epochs"],
+  ["GNN baselines", "R-GCN + CompGCN via PyKEEN · DistMult head · same protocol"],
+  ["Inference", "Pure NumPy at runtime — no PyTorch in the production container"],
 ];
 
+function fmtCi(s: Stat | null, fmt: (v: number) => string): string {
+  if (!s) return "—";
+  return `[${fmt(s.lo)}, ${fmt(s.hi)}]`;
+}
+
 export function EvalSection() {
-  // Histogram bin counts: rank ∈ [1,5], [6,10], [11,15], [16,19]
+  // Histogram bins: rank ∈ [1,5], [6,10], [11,15], [16,19].
   const bins = [
-    { label: "1–5",   range: [1, 5],   count: 0 },
-    { label: "6–10",  range: [6, 10],  count: 0 },
+    { label: "1–5", range: [1, 5], count: 0 },
+    { label: "6–10", range: [6, 10], count: 0 },
     { label: "11–15", range: [11, 15], count: 0 },
     { label: "16–19", range: [16, 19], count: 0 },
   ];
@@ -63,18 +148,21 @@ export function EvalSection() {
             02 — Eval
           </div>
           <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)] sm:text-[44px]">
-            The numbers, no spin.
+            The numbers, with confidence intervals.
           </h2>
           <p className="mt-3 text-pretty text-[15px] text-[var(--color-fg-2)]">
-            Held-out leave-one-out evaluation. Same training corpus, same protocol — RotatE
-            structurally models antisymmetric relations like{" "}
-            <code className="font-mono text-[var(--color-fg-1)]">TREATS</code>, where TransE
-            collapses.
+            Held-out leave-one-out over 16 TREATS triples on the LSD-scoped KG. n is small,
+            so the bootstrap 95% CI is the honest headline — and it&apos;s wide on purpose.
+            R-GCN and CompGCN share the same protocol; their columns light up the moment the
+            T4-trained artifacts ship into the deploy.
           </p>
           <dl className="mt-7 space-y-2.5">
             {SETUP.map(([k, v]) => (
-              <div key={k} className="flex items-baseline gap-3 border-b border-[var(--color-line)] py-1.5">
-                <dt className="w-32 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
+              <div
+                key={k}
+                className="flex items-baseline gap-3 border-b border-[var(--color-line)] py-1.5"
+              >
+                <dt className="w-32 shrink-0 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
                   {k}
                 </dt>
                 <dd className="flex-1 font-mono text-[12px] leading-snug text-[var(--color-fg-1)]">
@@ -86,55 +174,85 @@ export function EvalSection() {
         </div>
 
         <div className="flex flex-col gap-4">
+          {/* ----- Three-model comparison table with CIs ----- */}
           <div className="overflow-hidden rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)]">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-[var(--color-line)] text-left">
-                  <th className="px-5 py-3 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
+                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
                     Metric
                   </th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-wider text-[var(--color-acc)]">
-                    RotatE (ours)
-                  </th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
-                    TransE (baseline)
-                  </th>
-                  <th className="px-5 py-3 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
-                    Δ
-                  </th>
+                  {MODELS.map((m) => (
+                    <th
+                      key={m.label}
+                      className={
+                        "px-4 py-3 text-right font-mono text-[10px] uppercase tracking-wider " +
+                        (m.shipped ? "text-[var(--color-acc)]" : "text-[var(--color-fg-3)]/60")
+                      }
+                    >
+                      {m.label}
+                      {!m.shipped && (
+                        <span className="ml-1 text-[8px] normal-case tracking-normal opacity-70">
+                          (pending)
+                        </span>
+                      )}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {ROWS.map((r, i) => {
-                  const denom = Math.max(r.rotate, r.transe);
-                  const w = denom > 0 ? r.rotate / denom : 0;
+                {ROW_SPECS.map((row, i) => {
+                  // Bar widths are normalized to the largest *shipped* value in the row.
+                  const shippedVals = MODELS.filter((m) => m.shipped)
+                    .map((m) => row.pick(m)?.mean)
+                    .filter((v): v is number => typeof v === "number");
+                  const maxVal = shippedVals.length > 0 ? Math.max(...shippedVals) : 1;
+
                   return (
-                    <tr key={r.metric} className="border-b border-[var(--color-line)] last:border-0">
-                      <td className="px-5 py-4 font-mono text-[13px] text-[var(--color-fg-0)]">{r.metric}</td>
-                      <td className="px-5 py-4 text-right font-mono tabular text-[14px] text-[var(--color-fg-0)]">
-                        {r.fmt(r.rotate)}
+                    <tr
+                      key={row.metric}
+                      className="border-b border-[var(--color-line)] last:border-0"
+                    >
+                      <td className="px-4 py-4 font-mono text-[13px] text-[var(--color-fg-0)]">
+                        {row.metric}
+                        {row.lowerBetter && (
+                          <span className="ml-1 text-[10px] text-[var(--color-fg-3)]">↓</span>
+                        )}
                       </td>
-                      <td className="px-5 py-4 text-right font-mono tabular text-[13px] text-[var(--color-fg-2)]">
-                        {r.fmt(r.transe)}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="h-1.5 w-32 overflow-hidden rounded-full bg-[var(--color-bg-3)]">
-                            <motion.span
-                              initial={{ width: 0 }}
-                              whileInView={{ width: `${Math.round(w * 100)}%` }}
-                              viewport={{ once: true, margin: "-50px" }}
-                              transition={{ duration: 0.6, delay: i * 0.05 }}
-                              className="block h-full bg-[var(--color-acc)]"
-                            />
-                          </span>
-                          {r.delta && (
-                            <span className="font-mono tabular text-[12px] text-[var(--color-acc)]">
-                              {r.delta}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                      {MODELS.map((m) => {
+                        const stat = row.pick(m);
+                        const w =
+                          stat && maxVal > 0 ? Math.min(1, (stat.mean ?? 0) / maxVal) : 0;
+                        return (
+                          <td
+                            key={m.label}
+                            className={
+                              "px-4 py-4 text-right " +
+                              (m.shipped ? "" : "text-[var(--color-fg-3)]/50")
+                            }
+                          >
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="font-mono tabular text-[14px] text-[var(--color-fg-0)]">
+                                {stat ? row.fmt(stat.mean) : "—"}
+                              </span>
+                              <span className="font-mono text-[10px] text-[var(--color-fg-3)]">
+                                {fmtCi(stat, row.fmt)}
+                              </span>
+                              {m.shipped && stat && (
+                                <span className="block h-1 w-20 overflow-hidden rounded-full bg-[var(--color-bg-3)]">
+                                  <motion.span
+                                    initial={{ width: 0 }}
+                                    whileInView={{ width: `${Math.round(w * 100)}%` }}
+                                    viewport={{ once: true, margin: "-50px" }}
+                                    transition={{ duration: 0.6, delay: i * 0.05 }}
+                                    className="block h-full bg-[var(--color-acc)]"
+                                  />
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
@@ -142,14 +260,14 @@ export function EvalSection() {
             </table>
           </div>
 
-          {/* Rank distribution */}
+          {/* ----- Rank distribution ----- */}
           <div className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
             <div className="mb-3 flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
-                Rank distribution · n={PER_ITEM_RANKS.length}
+                Rank distribution · RotatE · n={PER_ITEM_RANKS.length}
               </span>
               <span className="font-mono text-[10px] text-[var(--color-fg-3)]">
-                of {PER_ITEM_RANKS.length} held-out triples, {bins[0].count} ranked top-5
+                {bins[0].count}/{PER_ITEM_RANKS.length} held-out triples ranked top-5
               </span>
             </div>
             <div className="grid grid-cols-4 gap-3">
@@ -158,7 +276,7 @@ export function EvalSection() {
                   <div className="flex items-end gap-2">
                     <motion.div
                       initial={{ height: 0 }}
-                      whileInView={{ height: `${(b.count / maxBin) * 84}px` }}
+                      whileInView={{ height: `${(b.count / Math.max(maxBin, 1)) * 84}px` }}
                       viewport={{ once: true, margin: "-50px" }}
                       transition={{ duration: 0.6, delay: i * 0.06 }}
                       className={
@@ -178,10 +296,42 @@ export function EvalSection() {
               ))}
             </div>
             <p className="mt-3 font-mono text-[10px] leading-relaxed text-[var(--color-fg-3)]">
-              KG is small (99 nodes), so absolute MRR isn&apos;t the headline — the structural
-              modelling delta vs TransE is. Hits@1 going from 0 → 0.188 means RotatE actually
-              gets some triples right; TransE never did.
+              The KG is small (673 nodes, 16 LOO folds), so absolute MRR isn&apos;t the
+              headline — the GNN-vs-RotatE delta is. Per-fold ranks come straight from
+              <code className="mx-1 font-mono text-[var(--color-fg-2)]">eval_report.json</code>;
+              re-run via{" "}
+              <code className="font-mono text-[var(--color-fg-2)]">
+                python -m app.ml.eval --bootstrap 2000
+              </code>
+              .
             </p>
+          </div>
+
+          {/* ----- Known-failure callout ----- */}
+          <div className="rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
+                Honest failures · reviewer-flagged
+              </span>
+              <span className="font-mono text-[10px] text-[var(--color-fg-3)]">RotatE</span>
+            </div>
+            <ul className="divide-y divide-[var(--color-line)]">
+              {KNOWN_FAILURES.map((f) => (
+                <li key={f.drug + f.disease} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 py-3">
+                  <span className="font-mono text-[13px] text-[var(--color-fg-0)]">
+                    {f.drug}{" "}
+                    <span className="text-[var(--color-fg-3)]">→</span>{" "}
+                    <span className="text-[var(--color-fg-1)]">{f.disease}</span>
+                  </span>
+                  <span className="font-mono tabular text-[12px] text-[var(--color-fg-1)]">
+                    rank {f.rank}
+                  </span>
+                  <span className="col-span-2 font-mono text-[10px] leading-relaxed text-[var(--color-fg-3)]">
+                    {f.note}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

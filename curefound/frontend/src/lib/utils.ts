@@ -66,3 +66,46 @@ export async function fetchStats(): Promise<{
     return null;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Repurpose model selector — GET /repurpose/models returns the set of
+ * scoring backends the live container has artifacts for. RotatE always
+ * ships; R-GCN / CompGCN are present only if the matching .npz files were
+ * bundled (Colab notebook produces them).
+ * ------------------------------------------------------------------------- */
+
+export type ModelName = "rotate" | "rgcn" | "compgcn";
+
+const MODEL_LABELS: Record<ModelName, string> = {
+  rotate: "RotatE",
+  rgcn: "R-GCN",
+  compgcn: "CompGCN",
+};
+
+export function modelLabel(m: ModelName): string {
+  return MODEL_LABELS[m] ?? m;
+}
+
+/**
+ * Cached fetch of available models. Falls back to ["rotate"] (the always-on
+ * baseline) if the API is unreachable so the UI still renders a sensible chip.
+ */
+let _modelsCache: { models: ModelName[]; ts: number } | null = null;
+
+export async function fetchAvailableModels(forceRefresh = false): Promise<ModelName[]> {
+  const now = Date.now();
+  if (!forceRefresh && _modelsCache && now - _modelsCache.ts < 60_000) {
+    return _modelsCache.models;
+  }
+  try {
+    const r = await api<{ models: string[] }>("/repurpose/models");
+    const valid = r.models.filter((m): m is ModelName => m === "rotate" || m === "rgcn" || m === "compgcn");
+    const models = valid.length > 0 ? valid : (["rotate"] as ModelName[]);
+    _modelsCache = { models, ts: now };
+    return models;
+  } catch {
+    const models: ModelName[] = ["rotate"];
+    _modelsCache = { models, ts: now };
+    return models;
+  }
+}

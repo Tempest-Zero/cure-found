@@ -137,7 +137,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B017", "B018"]    # test asserts are intentionally loose
-"app/etl/ingest/*.py" = ["E402"]      # ingestors may sys.path.insert before imports
 # Mathematical Unicode (ℂ ℝ σ γ ∘ ‖ −) is intentional in the KGE module
 # documentation -- it mirrors the Sun et al. 2019 RotatE paper notation.
 "app/ml/rotate.py" = ["RUF002", "RUF003"]
@@ -185,7 +184,7 @@ filterwarnings = [
 [tool.coverage.run]
 branch = true
 source = ["app"]
-omit = ["app/etl/ingest/*", "app/ml/eval.py"]  # separately exercised
+omit = ["app/ml/eval.py"]  # separately exercised via the eval CLI
 
 [tool.coverage.report]
 show_missing = true
