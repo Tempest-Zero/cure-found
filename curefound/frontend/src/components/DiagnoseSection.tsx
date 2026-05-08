@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { spring, varSectionHead, varBadge } from "@/lib/motion";
 import { AlertCircle, Stethoscope, X } from "lucide-react";
 import { KGPulse } from "./KGPulse";
 import {
@@ -69,23 +70,30 @@ export function DiagnoseSection() {
     <section id="diagnose" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={{
+            hidden: {},
+            show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+          }}
+          initial="hidden"
+          whileInView="show"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-[760px]"
         >
-          <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
+          <motion.div variants={varBadge} className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: "var(--fs-eyebrow)" }}>
             03 — Diagnose
-          </div>
-          <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
+          </motion.div>
+          <motion.h2 variants={varSectionHead} className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
             From symptoms to candidate diseases.
-          </h2>
-          <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
+          </motion.h2>
+          <motion.p
+            variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { ...spring.card } } }}
+            className="mt-3 text-pretty text-[var(--color-fg-2)]"
+            style={{ fontSize: "var(--fs-body)" }}
+          >
             Pick HPO-aligned symptoms — the API runs Jaccard + smoothed-IDF over the KG&apos;s{" "}
             <code className="font-mono text-[var(--color-fg-1)]">HAS_PHENOTYPE</code> edges and
             fuses both rankings via RRF. Useful as a triage hint, not a diagnosis.
-          </p>
+          </motion.p>
         </motion.div>
         <ApiStatusChip sourceLabel="Jaccard+IDF" lastRequestState={lastApiState} className="mt-2" />
       </div>
@@ -253,7 +261,7 @@ export function DiagnoseSection() {
                         key={c.disease_id + i}
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.round(c.jaccard_score * 100)}%` }}
-                        transition={{ duration: 0.4 }}
+                        transition={{ ...spring.card }}
                         className="block h-full bg-[var(--color-acc)]"
                       />
                     </span>

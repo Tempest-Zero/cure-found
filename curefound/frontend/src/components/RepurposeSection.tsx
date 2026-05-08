@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { spring, varSectionHead, varBadge } from "@/lib/motion";
 import { CheckCircle2, ChevronRight, FlaskConical, Sparkles } from "lucide-react";
 import { KGPulse } from "./KGPulse";
 import {
@@ -267,10 +268,10 @@ export function RepurposeSection() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={sel?.drug_id ?? "empty"}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: 10, filter: "blur(3px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -8, filter: "blur(3px)" }}
+                transition={{ ...spring.tight }}
               >
                 {sel ? (
                   <PathFigure paths={sel.evidence_paths} />
@@ -465,7 +466,7 @@ function ScoreBar({
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${Math.round(bar * 100)}%` }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ ...spring.card }}
           className={cn("h-full", accent ? "bg-[var(--color-acc)]" : "bg-[var(--color-fg-2)]")}
         />
       </div>
@@ -539,19 +540,28 @@ function ModelChipGroup({
 function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      variants={{
+        hidden: {},
+        show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+      }}
+      initial="hidden"
+      whileInView="show"
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="max-w-[760px]"
     >
-      <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
+      <motion.div variants={varBadge} className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: "var(--fs-eyebrow)" }}>
         {eyebrow}
-      </div>
-      <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
+      </motion.div>
+      <motion.h2 variants={varSectionHead} className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
         {title}
-      </h2>
-      <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>{sub}</p>
+      </motion.h2>
+      <motion.p
+        variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { ...spring.card } } }}
+        className="mt-3 text-pretty text-[var(--color-fg-2)]"
+        style={{ fontSize: "var(--fs-body)" }}
+      >
+        {sub}
+      </motion.p>
     </motion.div>
   );
 }

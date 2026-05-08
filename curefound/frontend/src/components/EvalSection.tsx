@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { spring, varSectionHead, varBadge } from "@/lib/motion";
 
 /**
  * Real numbers, taken verbatim from data/artifacts/eval_report.json (see
@@ -146,23 +147,30 @@ export function EvalSection() {
     <section id="eval" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
       <div className="grid gap-10 lg:grid-cols-[420px_1fr]">
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={{
+            hidden: {},
+            show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+          }}
+          initial="hidden"
+          whileInView="show"
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
+          <motion.div variants={varBadge} className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: "var(--fs-eyebrow)" }}>
             02 — Eval
-          </div>
-          <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
+          </motion.div>
+          <motion.h2 variants={varSectionHead} className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
             The numbers, with confidence intervals.
-          </h2>
-          <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
+          </motion.h2>
+          <motion.p
+            variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { ...spring.card } } }}
+            className="mt-3 text-pretty text-[var(--color-fg-2)]"
+            style={{ fontSize: "var(--fs-body)" }}
+          >
             Held-out leave-one-out over 16 TREATS triples on the LSD-scoped KG. n is small,
             so the bootstrap 95% CI is the honest headline — and it&apos;s wide on purpose.
             R-GCN and CompGCN share the same protocol; their columns light up the moment the
             T4-trained artifacts ship into the deploy.
-          </p>
+          </motion.p>
           <dl className="mt-7 space-y-2.5">
             {SETUP.map(([k, v]) => (
               <div
@@ -251,7 +259,7 @@ export function EvalSection() {
                                     initial={{ width: 0 }}
                                     whileInView={{ width: `${Math.round(w * 100)}%` }}
                                     viewport={{ once: true, margin: "-50px" }}
-                                    transition={{ duration: 0.6, delay: i * 0.05 }}
+                                    transition={{ ...spring.card, delay: i * 0.04 }}
                                     className="block h-full bg-[var(--color-acc)]"
                                   />
                                 </span>
@@ -285,7 +293,7 @@ export function EvalSection() {
                       initial={{ height: 0 }}
                       whileInView={{ height: `${(b.count / Math.max(maxBin, 1)) * 84}px` }}
                       viewport={{ once: true, margin: "-50px" }}
-                      transition={{ duration: 0.6, delay: i * 0.06 }}
+                      transition={{ ...spring.card, delay: i * 0.055 }}
                       className={
                         i === 0
                           ? "w-full rounded-t-md bg-[var(--color-acc)]"

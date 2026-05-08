@@ -2,6 +2,11 @@ import { ArrowRight, ExternalLink, Github, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
+import {
+  ease, spring, dur, scrub, parallaxRate,
+  varHeroTitle, varBadge, varStat,
+  orchHero, orchStats,
+} from "@/lib/motion";
 import { NumberTicker } from "./components/ui/NumberTicker";
 import { BackgroundBeams, Spotlight } from "./components/aceternity";
 import { RepurposeSection } from "./components/RepurposeSection";
@@ -53,9 +58,12 @@ function NavBar() {
   }, []);
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-200 ${
+      className={`fixed inset-x-0 top-0 z-50 ${
         scrolled ? "backdrop-blur-md bg-[rgba(10,10,11,0.72)] border-b border-[var(--color-line)]" : ""
       }`}
+      style={{
+        transition: `background ${dur.std}s cubic-bezier(${ease.quint.join(",")})`,
+      }}
     >
       <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-3.5">
         <a href="#top" className="flex items-center gap-2.5">
@@ -106,88 +114,150 @@ function LogoMark() {
   );
 }
 
-const statContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
-};
-const statItem = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-};
 
 function Hero() {
-  const heroRef = useRef<HTMLDivElement>(null);
+  const sectionRef    = useRef<HTMLDivElement>(null);
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
+  const beamsRef      = useRef<HTMLDivElement>(null);
+  const contentRef    = useRef<HTMLDivElement>(null);
+  const warningRef    = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!heroRef.current) return;
+    if (!sectionRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.to(heroRef.current, {
-        scrollTrigger: { trigger: heroRef.current, start: "top top", end: "bottom top", scrub: true },
-        scale: 1.08,
-        opacity: 0.55,
+      const trig = { trigger: sectionRef.current!, start: "top top", end: "bottom top" };
+
+      // Deep background layer — slowest, maximum mass
+      gsap.to(canvasWrapRef.current, {
+        scrollTrigger: { ...trig, scrub: scrub.crawl },
+        y: `${parallaxRate.bg * 100}%`,
+        scale: 1.12,
+        opacity: 0.4,
       });
-    }, heroRef);
+
+      // Beams midground — slightly faster than canvas
+      gsap.to(beamsRef.current, {
+        scrollTrigger: { ...trig, scrub: scrub.heavy },
+        y: `${parallaxRate.midBg * 100}%`,
+        opacity: 0.3,
+      });
+
+      // Content foreground — moves up toward viewer as page scrolls
+      gsap.to(contentRef.current, {
+        scrollTrigger: { ...trig, scrub: scrub.normal },
+        y: `${parallaxRate.fg * -60}px`,
+        opacity: 0.0,
+      });
+
+      // Warning badge exits faster (lightweight)
+      gsap.to(warningRef.current, {
+        scrollTrigger: { ...trig, scrub: scrub.tight },
+        y: `${parallaxRate.midFg * -40}px`,
+        opacity: 0,
+      });
+    }, sectionRef);
     return () => ctx.revert();
   }, []);
 
   return (
-    <section id="top" className="relative isolate overflow-hidden pb-24 pt-32 sm:pt-40">
+    <section ref={sectionRef} id="top" className="relative isolate overflow-hidden pb-24 pt-32 sm:pt-40">
       <Spotlight />
-      <BackgroundBeams className="opacity-70" />
-      <div ref={heroRef} className="absolute inset-0 spotlight-mask">
+
+      {/* Background layer — slowest parallax */}
+      <div ref={canvasWrapRef} className="absolute inset-0 spotlight-mask" style={{ willChange: "transform, opacity" }}>
         <Suspense fallback={null}>
           <HeroKGCanvas />
         </Suspense>
       </div>
 
-      <div className="relative mx-auto max-w-[1200px] px-6">
+      {/* Midground layer — beams */}
+      <div ref={beamsRef} className="absolute inset-0 pointer-events-none" style={{ willChange: "transform, opacity" }}>
+        <BackgroundBeams className="opacity-70" />
+      </div>
+
+      {/* Foreground content */}
+      <div ref={contentRef} className="relative mx-auto max-w-[1200px] px-6" style={{ willChange: "transform, opacity" }}>
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          variants={orchHero}
+          initial="hidden"
+          animate="show"
           className="mx-auto max-w-[820px] text-center"
         >
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/70 px-3 py-1 font-mono text-[11px] text-[var(--color-fg-2)] backdrop-blur">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-acc)] shadow-[0_0_10px_var(--color-acc)]" />
-            RotatE · 673 nodes · 1,057 edges · 13 rare diseases
-          </div>
+          {/* Badge — snaps in first, tight spring */}
+          <motion.div variants={varBadge} className="mb-5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/70 px-3 py-1 font-mono text-[11px] text-[var(--color-fg-2)] backdrop-blur">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-acc)] shadow-[0_0_10px_var(--color-acc)]" />
+              RotatE · 673 nodes · 1,057 edges · 13 rare diseases
+            </span>
+          </motion.div>
 
-          <h1 className="font-display text-balance font-semibold leading-[1.05] tracking-[-0.02em]" style={{ fontSize: 'var(--fs-display)' }}>
+          {/* Display title — heavyweight entrance with blur */}
+          <motion.h1
+            variants={varHeroTitle}
+            className="font-display text-balance font-semibold leading-[1.05] tracking-[-0.02em]"
+            style={{ fontSize: "var(--fs-display)" }}
+          >
             Predict repurposable drugs
             <br />
             for <span className="text-[var(--color-acc)]">rare lysosomal disorders</span>.
-          </h1>
+          </motion.h1>
 
-          <p className="mx-auto mt-6 max-w-[640px] text-pretty leading-[1.6] text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
+          {/* Body copy — standard card spring */}
+          <motion.p
+            variants={{
+              hidden: { opacity: 0, y: 14 },
+              show:   { opacity: 1, y: 0, transition: { ...spring.card } },
+            }}
+            className="mx-auto mt-6 max-w-[640px] text-pretty leading-[1.6] text-[var(--color-fg-2)]"
+            style={{ fontSize: "var(--fs-body)" }}
+          >
             CureFound learns complex-valued relational rotations over a curated KG of diseases,
             drugs, proteins, and pathways — then ranks plausible drug candidates with the full
             evidence path attached.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a href="#repurpose" className="lift group inline-flex items-center gap-2 rounded-md bg-[var(--color-acc)] px-4 py-2.5 text-[14px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)]">
+          {/* CTAs — back-out overshoot on enter */}
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 12, scale: 0.97 },
+              show:   { opacity: 1, y: 0,  scale: 1, transition: { ...spring.snap } },
+            }}
+            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          >
+            <a
+              href="#repurpose"
+              className="lift group inline-flex items-center gap-2 rounded-md bg-[var(--color-acc)] px-4 py-2.5 text-[14px] font-medium text-[#001a07] hover:bg-[var(--color-acc-2)]"
+            >
               Try the demo
-              <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight
+                size={15}
+                className="transition-transform duration-200 group-hover:translate-x-1"
+                style={{ transitionTimingFunction: `cubic-bezier(${ease.back.join(",")})` }}
+              />
             </a>
-            <a href="#methods" className="lift inline-flex items-center gap-2 rounded-md border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/60 px-4 py-2.5 text-[14px] text-[var(--color-fg-1)] backdrop-blur hover:border-[var(--color-fg-4)]">
+            <a
+              href="#methods"
+              className="lift inline-flex items-center gap-2 rounded-md border border-[var(--color-line-2)] bg-[var(--color-bg-2)]/60 px-4 py-2.5 text-[14px] text-[var(--color-fg-1)] backdrop-blur hover:border-[var(--color-fg-4)]"
+            >
               Methods <ExternalLink size={13} />
             </a>
-          </div>
+          </motion.div>
 
+          {/* Stats — exponential cascade, each with snap spring */}
           <motion.div
-            variants={statContainer}
+            variants={orchStats}
             initial="hidden"
             animate="show"
             className="mx-auto mt-10 grid max-w-[760px] grid-cols-2 gap-3 sm:grid-cols-4"
           >
-            <motion.div variants={statItem}><Stat label="MRR"      numValue={0.380} sub="vs 0.131 TransE" /></motion.div>
-            <motion.div variants={statItem}><Stat label="Hits@1"   numValue={0.188} sub="first non-zero" /></motion.div>
-            <motion.div variants={statItem}><Stat label="Hits@3"   numValue={0.375} sub="+506% vs TransE" /></motion.div>
-            <motion.div variants={statItem}><Stat label="Hits@10"  numValue={0.750} sub="+33% vs TransE" /></motion.div>
+            <motion.div variants={varStat}><Stat label="MRR"     numValue={0.380} sub="vs 0.131 TransE" /></motion.div>
+            <motion.div variants={varStat}><Stat label="Hits@1"  numValue={0.188} sub="first non-zero" /></motion.div>
+            <motion.div variants={varStat}><Stat label="Hits@3"  numValue={0.375} sub="+506% vs TransE" /></motion.div>
+            <motion.div variants={varStat}><Stat label="Hits@10" numValue={0.750} sub="+33% vs TransE" /></motion.div>
           </motion.div>
         </motion.div>
 
-        <div className="mt-10 flex justify-center">
+        <div ref={warningRef} className="mt-10 flex justify-center" style={{ willChange: "transform, opacity" }}>
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-bg-1)]/80 px-3 py-1.5 backdrop-blur">
             <ShieldAlert size={13} className="text-[var(--color-warn)]" />
             <span className="font-mono text-[11px] text-[var(--color-fg-2)]">

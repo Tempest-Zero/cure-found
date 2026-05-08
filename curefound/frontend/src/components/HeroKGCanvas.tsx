@@ -87,15 +87,22 @@ export function HeroKGCanvas() {
       }
     }
 
-    // GSAP ambient drift — slow, sub-pixel
     if (!reduceMotion) {
       nodes.forEach((n, i) => {
+        // Larger nodes (Disease/Drug) are "heavier" — smaller drift range, slower period
+        const weight = n.r > 3 ? 0.55 : n.r > 2.8 ? 0.8 : 1.2;
+        const range  = 20 * weight;
+        const period = (7 + Math.random() * 6) / weight;
+
         gsap.to(n, {
-          x: n.x + (Math.random() - 0.5) * 24,
-          y: n.y + (Math.random() - 0.5) * 24,
-          duration: 6 + Math.random() * 4,
-          repeat: -1, yoyo: true, ease: "sine.inOut",
-          delay: i * 0.04,
+          x: n.x + (Math.random() - 0.5) * range,
+          y: n.y + (Math.random() - 0.5) * range,
+          duration: period,
+          repeat: -1,
+          yoyo: true,
+          // Expo-out for heavy nodes, sine for light — mass-differentiated feel
+          ease: n.r > 3 ? "expo.inOut" : "sine.inOut",
+          delay: i * 0.038,
         });
       });
     }

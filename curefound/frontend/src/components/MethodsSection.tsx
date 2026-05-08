@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CircuitBoard, Layers, Network, Sigma, Workflow } from "lucide-react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { ease, spring, scrub, gsapEase, varCard, varSectionHead, varBadge, orchCards } from "@/lib/motion";
 
 const PIPELINE = [
   {
@@ -31,34 +32,46 @@ const PIPELINE = [
   },
 ];
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
-};
-const cardVariant = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-};
 
 export function MethodsSection() {
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // GSAP scrub — each card gets a subtle glow + scale as you scroll past it
   useEffect(() => {
     if (!gridRef.current) return;
     const ctx = gsap.context(() => {
       const cards = gsap.utils.toArray<HTMLElement>(".method-card");
-      cards.forEach((card) => {
+      cards.forEach((card, i) => {
+        // Scroll-in with inertia lag — each card slightly offset for organic feel
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 78%",
+            end: "top 42%",
+            scrub: scrub.normal + i * 0.06,
+          },
+        });
+        tl.fromTo(
+          card,
+          { y: 18, scale: 0.97, opacity: 0.7 },
+          {
+            y: 0,
+            scale: 1,
+            opacity: 1,
+            ease: gsapEase.snap,
+          },
+        );
+
+        // Active zone: card glows as it passes the viewport sweet-spot
         gsap.to(card, {
           scrollTrigger: {
             trigger: card,
-            start: "top 75%",
-            end: "top 35%",
-            scrub: 0.6,
+            start: "top 55%",
+            end: "top 20%",
+            scrub: scrub.tight,
           },
-          scale: 1.015,
-          borderColor: "color-mix(in oklab, var(--color-line) 50%, var(--color-acc) 50%)",
-          boxShadow: "0 12px 32px -16px rgba(94,227,139,.25)",
+          borderColor: "color-mix(in oklab, var(--color-line) 35%, var(--color-acc) 65%)",
+          boxShadow: "0 20px 48px -20px rgba(94,227,139,.32), 0 0 0 1px rgba(94,227,139,.1)",
+          ease: gsapEase.scrub,
         });
       });
     }, gridRef);
@@ -67,28 +80,48 @@ export function MethodsSection() {
 
   return (
     <section id="methods" className="relative mx-auto max-w-[1200px] scroll-mt-24 px-6 py-24">
+      {/* Section header — orchestrated: eyebrow snaps, heading lands heavy */}
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        variants={{
+          hidden: {},
+          show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+        }}
+        initial="hidden"
+        whileInView="show"
         viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="max-w-[760px]"
       >
-        <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
+        <motion.div
+          variants={varBadge}
+          className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]"
+          style={{ fontSize: "var(--fs-eyebrow)" }}
+        >
           05 — Methods
-        </div>
-        <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
+        </motion.div>
+        <motion.h2
+          variants={varSectionHead}
+          className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]"
+          style={{ fontSize: "var(--fs-h2)" }}
+        >
           How it works, end to end.
-        </h2>
-        <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
+        </motion.h2>
+        <motion.p
+          variants={{
+            hidden: { opacity: 0, y: 12 },
+            show:   { opacity: 1, y: 0, transition: { ...spring.card } },
+          }}
+          className="mt-3 text-pretty text-[var(--color-fg-2)]"
+          style={{ fontSize: "var(--fs-body)" }}
+        >
           Knowledge graph embedding + graph heuristic + traceable provenance. Every prediction
           can be opened and read.
-        </p>
+        </motion.p>
       </motion.div>
 
+      {/* Card grid — exponential stagger, each card depth-shifted */}
       <motion.div
         ref={gridRef}
-        variants={containerVariants}
+        variants={orchCards}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-40px" }}
@@ -97,14 +130,20 @@ export function MethodsSection() {
         {PIPELINE.map((s, i) => (
           <motion.div
             key={s.title}
-            variants={cardVariant}
-            className="method-card tilt rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5"
+            variants={varCard}
+            className="method-card depth rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5"
+            style={{ willChange: "transform, box-shadow, border-color" }}
           >
             <div className="flex items-center gap-2">
               <span className="font-mono text-[10px] tabular text-[var(--color-fg-3)]">
                 0{i + 1}
               </span>
-              <s.icon size={15} className="text-[var(--color-acc)]" />
+              <motion.span
+                whileHover={{ rotate: 12, scale: 1.18 }}
+                transition={{ ...spring.snap }}
+              >
+                <s.icon size={15} className="text-[var(--color-acc)]" />
+              </motion.span>
             </div>
             <div className="mt-3 font-display text-[16px] font-semibold text-[var(--color-fg-0)]">
               {s.title}
@@ -116,10 +155,10 @@ export function MethodsSection() {
 
       {/* Equation strip */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 14 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-40px" }}
-        transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ ...spring.card, delay: 0.18 }}
         className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-line)] bg-[var(--color-bg-1)] p-5"
       >
         <div className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-3)]">
