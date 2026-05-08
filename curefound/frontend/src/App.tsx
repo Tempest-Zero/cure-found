@@ -191,15 +191,14 @@ function Hero() {
             </span>
           </motion.div>
 
-          {/* Display title — heavyweight entrance with blur */}
+          {/* Display title — editorial serif with italic accent */}
           <motion.h1
             variants={varHeroTitle}
-            className="font-display text-balance font-semibold leading-[1.05] tracking-[-0.02em]"
+            className="font-editorial text-balance leading-[1.02] tracking-[-0.025em] text-[var(--color-fg-0)]"
             style={{ fontSize: "var(--fs-display)" }}
           >
-            Predict repurposable drugs
-            <br />
-            for <span className="text-[var(--color-acc)]">rare lysosomal disorders</span>.
+            Predict repurposable drugs<br />
+            for <em className="text-[var(--color-acc)]">rare lysosomal disorders</em>.
           </motion.h1>
 
           {/* Body copy — standard card spring */}

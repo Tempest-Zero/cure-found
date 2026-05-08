@@ -158,8 +158,8 @@ export function EvalSection() {
           <motion.div variants={varBadge} className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: "var(--fs-eyebrow)" }}>
             02 — Eval
           </motion.div>
-          <motion.h2 variants={varSectionHead} className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
-            The numbers, with confidence intervals.
+          <motion.h2 variants={varSectionHead} className="mt-3 font-editorial text-balance leading-[1.05] tracking-[-0.02em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
+            The numbers, with <em>confidence intervals</em>.
           </motion.h2>
           <motion.p
             variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { ...spring.card } } }}

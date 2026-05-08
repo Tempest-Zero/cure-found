@@ -82,8 +82,8 @@ export function DiagnoseSection() {
           <motion.div variants={varBadge} className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: "var(--fs-eyebrow)" }}>
             03 — Diagnose
           </motion.div>
-          <motion.h2 variants={varSectionHead} className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
-            From symptoms to candidate diseases.
+          <motion.h2 variants={varSectionHead} className="mt-3 font-editorial text-balance leading-[1.05] tracking-[-0.02em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
+            From symptoms to <em>candidate diseases</em>.
           </motion.h2>
           <motion.p
             variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { ...spring.card } } }}

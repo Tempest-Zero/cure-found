@@ -100,10 +100,10 @@ export function MethodsSection() {
         </motion.div>
         <motion.h2
           variants={varSectionHead}
-          className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]"
+          className="mt-3 font-editorial text-balance leading-[1.05] tracking-[-0.02em] text-[var(--color-fg-0)]"
           style={{ fontSize: "var(--fs-h2)" }}
         >
-          How it works, end to end.
+          How it works, <em>end to end</em>.
         </motion.h2>
         <motion.p
           variants={{

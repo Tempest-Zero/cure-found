@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { spring, varSectionHead, varBadge } from "@/lib/motion";
 import { CheckCircle2, ChevronRight, FlaskConical, Sparkles } from "lucide-react";
@@ -119,7 +119,7 @@ export function RepurposeSection() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SectionHeader
           eyebrow="01 — Repurpose"
-          title="Rank candidate drugs for a rare disease."
+          title={<>Rank candidate drugs for a <em>rare disease</em>.</>}
           sub="Pick a disease — get a ranked list of drug candidates with the full evidence path through the KG, plus the model and graph scores behind each rank."
         />
         <ApiStatusChip sourceLabel={modelLabel(model)} lastRequestState={lastApiState} className="mt-2" />
@@ -537,7 +537,7 @@ function ModelChipGroup({
 }
 
 /* ---------------------------- Section header ---------------------------- */
-function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
+function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: ReactNode; sub: string }) {
   return (
     <motion.div
       variants={{
@@ -552,7 +552,7 @@ function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string
       <motion.div variants={varBadge} className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: "var(--fs-eyebrow)" }}>
         {eyebrow}
       </motion.div>
-      <motion.h2 variants={varSectionHead} className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
+      <motion.h2 variants={varSectionHead} className="mt-3 font-editorial text-balance leading-[1.05] tracking-[-0.02em] text-[var(--color-fg-0)]" style={{ fontSize: "var(--fs-h2)" }}>
         {title}
       </motion.h2>
       <motion.p

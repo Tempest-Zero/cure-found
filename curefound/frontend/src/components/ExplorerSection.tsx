@@ -92,8 +92,8 @@ export function ExplorerSection() {
         <div className="font-mono uppercase tracking-[0.18em] text-[var(--color-acc)]" style={{ fontSize: 'var(--fs-eyebrow)' }}>
           04 — Graph
         </div>
-        <h2 className="mt-3 font-display font-semibold leading-[1.1] tracking-[-0.015em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
-          The whole knowledge graph, browsable.
+        <h2 className="mt-3 font-editorial text-balance leading-[1.05] tracking-[-0.02em] text-[var(--color-fg-0)]" style={{ fontSize: 'var(--fs-h2)' }}>
+          The whole <em>knowledge graph</em>, browsable.
         </h2>
         <p className="mt-3 text-pretty text-[var(--color-fg-2)]" style={{ fontSize: 'var(--fs-body)' }}>
           673 nodes · 1,057 edges · 7 relation types. Click a node to highlight its neighborhood.
